@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { dashboard, sidebar } from "@/lib/data";
 import { formatMoney } from "@/lib/money";
 import { displayName } from "@/lib/users";
-import { Avatar, Balance, Card, EmptyState, LinkButton, PageHeader } from "@/components/ui";
+import { Avatar, Balance, Card, EmptyState, Flash, LinkButton, PageHeader } from "@/components/ui";
 
 export const metadata = { title: "Dashboard" };
 
@@ -12,7 +12,8 @@ function Totals({ m }: { m: Map<string, number> }) {
   return <>{[...m.entries()].map(([c, v]) => <span key={c} className="block">{formatMoney(v, c)}</span>)}</>;
 }
 
-export default async function Dashboard() {
+export default async function Dashboard({ searchParams }: { searchParams: Promise<{ reset?: string }> }) {
+  const justReset = (await searchParams).reset === "1";
   const me = await requireUser();
   const [{ rows, owed, owe }, nav] = await Promise.all([dashboard(me.id), sidebar(me.id)]);
   const theyOwe = rows.filter((r) => r.amounts.some(([, v]) => v > 0));
@@ -42,6 +43,7 @@ export default async function Dashboard() {
           </>
         }
       />
+      {justReset && <div className="mb-4"><Flash kind="ok">Password changed. Other devices have been signed out.</Flash></div>}
       <Card className="mb-6 grid grid-cols-3 divide-x divide-border text-center">
         <div className="p-4">
           <div className="text-xs text-muted">Total balance</div>

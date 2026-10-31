@@ -14,7 +14,10 @@ export default function Login() {
           <input id="email" name="email" type="email" autoComplete="email" required className="field" />
         </div>
         <div>
-          <label className="label" htmlFor="password">Password</label>
+          <div className="flex items-baseline justify-between">
+            <label className="label" htmlFor="password">Password</label>
+            <Link href="/forgot-password" className="link text-xs">Forgot password?</Link>
+          </div>
           <input id="password" name="password" type="password" autoComplete="current-password" required className="field" />
         </div>
         <SubmitButton className="w-full">Log in</SubmitButton>

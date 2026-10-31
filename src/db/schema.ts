@@ -38,6 +38,23 @@ export const sessions = pgTable("sessions", {
   createdAt: createdAt(),
 }, (t) => [index("sessions_user_idx").on(t.userId)]);
 
+// One row per "forgot password" request. Only the sha256 of the emailed token is stored.
+export const passwordResets = pgTable("password_resets", {
+  id: id(),
+  // null when the email matched no account: the row still counts toward rate limits
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  tokenHash: text("token_hash").unique(),
+  ip: text("ip"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  index("password_resets_user_idx").on(t.userId),
+  index("password_resets_email_created_idx").on(t.email, t.createdAt),
+  index("password_resets_ip_created_idx").on(t.ip, t.createdAt),
+]);
+
 export const friendships = pgTable("friendships", {
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   friendId: uuid("friend_id").notNull().references(() => users.id, { onDelete: "cascade" }),

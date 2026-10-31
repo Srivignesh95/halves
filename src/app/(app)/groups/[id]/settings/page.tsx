@@ -54,7 +54,7 @@ export default async function GroupSettings({ params }: { params: Promise<{ id: 
               </li>
             ))}
           </ul>
-          <ActionForm action={addMember} className="flex flex-wrap items-end gap-2">
+          <ActionForm action={addMember} className="flex flex-wrap items-end gap-2" resetOnSuccess>
             <input type="hidden" name="groupId" value={g.id} />
             <div className="min-w-48 flex-1">
               <label className="label" htmlFor="email">Add someone by email</label>

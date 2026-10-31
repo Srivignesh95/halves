@@ -8,7 +8,12 @@
   the account and its history.
 - Account deletion: blocked while any balance is open, then anonymises the user and
   removes sessions, friendships and memberships.
-- Not built yet: password reset email, Google sign-in, rate limits (see checklist).
+- Password reset: `/forgot-password` emails a one-time link (`/reset-password?token=...`), valid 30 minutes.
+  Only the sha256 of the token is stored (`password_resets`). Using it sets the new password, kills every other
+  open link for that account and signs out every device. Same reply whether or not the email has an account;
+  the email is sent after the response so timing doesn't tell either. Limits: 3 emails per address and
+  10 requests per IP per hour. Email goes through Resend (`RESEND_API_KEY`) or any SMTP mailbox (`SMTP_*`).
+- Not built yet: Google sign-in, rate limits on log in and sign up (see checklist).
 
 ## Database
 

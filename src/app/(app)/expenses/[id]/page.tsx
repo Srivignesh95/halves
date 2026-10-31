@@ -109,7 +109,7 @@ export default async function ExpenseDetail({ params }: { params: Promise<{ id: 
                 </li>
               ))}
             </ul>
-            <ActionForm action={addComment} className="space-y-2">
+            <ActionForm action={addComment} className="space-y-2" resetOnSuccess>
               <input type="hidden" name="id" value={e.id} />
               <label htmlFor="body" className="sr-only">Add a comment</label>
               <textarea id="body" name="body" rows={2} maxLength={1000} required className="field" placeholder="Add a comment" />

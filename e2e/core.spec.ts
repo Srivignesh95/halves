@@ -168,3 +168,23 @@ test("F03 removing a member who still has a balance is blocked", async ({ page }
   await page.getByRole("listitem").filter({ hasText: "Ben Okafor" }).getByRole("button", { name: "Remove" }).click();
   await expect(page.getByText("They still have a balance in this group")).toBeVisible();
 });
+
+test("a wrong password keeps the email typed in", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("Email").fill("ana@example.com");
+  await page.getByLabel("Password").fill("nope-nope");
+  await page.getByRole("button", { name: "Log in" }).click();
+  await expect(page.getByText("Email or password is wrong")).toBeVisible();
+  await expect(page.getByLabel("Email")).toHaveValue("ana@example.com");
+});
+
+test("posting a comment clears the box", async ({ page }) => {
+  await login(page, "ana@example.com");
+  await page.goto("/expenses?q=rent");
+  await page.getByRole("link", { name: /October rent/ }).click();
+  await expect(page).toHaveURL(/\/expenses\/[0-9a-f-]{36}$/);
+  await page.getByLabel("Add a comment").fill("Paid by e-transfer");
+  await page.getByRole("button", { name: "Post" }).click();
+  await expect(page.getByRole("listitem").filter({ hasText: "Paid by e-transfer" })).toBeVisible();
+  await expect(page.getByLabel("Add a comment")).toHaveValue("");
+});
