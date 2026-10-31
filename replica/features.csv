@@ -1,0 +1,38 @@
+feature,area,priority,original,clone,notes
+Sign up and log in with email,auth,must,yes,yes,
+Invite someone by email before they have an account,auth,must,yes,yes,
+Delete account,auth,must,yes,yes,
+Create a group with members,groups,must,yes,yes,
+Add and remove group members,groups,must,yes,yes,
+Add a friend,friends,must,yes,yes,
+Add an expense in a group,expenses,must,yes,yes,
+Add an expense with a friend outside any group,expenses,must,yes,yes,
+Split equally with fair remainder cents,expenses,must,yes,yes,
+Split by exact amounts,expenses,must,yes,yes,
+Split by percentages,expenses,must,yes,yes,
+Split by shares,expenses,must,yes,yes,
+Edit and delete an expense,expenses,must,yes,yes,
+Dashboard with total owe / owed and per-person balances,balances,must,yes,yes,
+Group balances and who owes whom,balances,must,yes,yes,
+Record a settle up payment,settle,must,yes,yes,
+Multiple payers on one expense,expenses,should,yes,yes,
+Simplify debts toggle per group,balances,should,yes,yes,
+Balance with a friend across all groups,balances,should,yes,yes,
+Recent activity feed,activity,should,yes,yes,
+Comments on an expense,expenses,should,yes,yes,
+Restore a deleted expense,expenses,should,yes,yes,
+Expense categories,expenses,should,yes,yes,
+Multiple currencies (balances kept per currency),money,should,yes,partial,12 currencies; balances kept apart per currency; no conversion
+Recurring expenses,expenses,should,yes,yes,daily cron /api/cron/recurring; idempotent claim
+Edit history on an expense,expenses,could,yes,yes,"snapshot per edit, shown on the expense page"
+Export to CSV,data,could,yes,yes,
+Search expenses,expenses,could,yes,yes,"description and notes, free (Pro on the original)"
+Charts by category and month,insights,could,yes,no,Pro on the original
+Default split per group,groups,could,yes,no,Pro on the original
+Offline entry,mobile,could,yes,no,
+Receipt photos,expenses,could,yes,no,
+Receipt scanning and itemization (OCR),expenses,could,yes,skip,needs a paid OCR provider; revisit after launch
+Currency conversion at live rates,money,could,yes,skip,needs your own exchange-rate API key and terms
+Card and bank transaction import,integrations,could,yes,skip,US banking aggregator contract
+Venmo / PayPal / Paytm hand-off,integrations,could,yes,skip,partner deals owned by the original
+Native mobile apps,mobile,should,yes,skip,web first; Expo later per architecture.md
