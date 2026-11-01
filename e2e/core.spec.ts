@@ -188,3 +188,25 @@ test("posting a comment clears the box", async ({ page }) => {
   await expect(page.getByRole("listitem").filter({ hasText: "Paid by e-transfer" })).toBeVisible();
   await expect(page.getByLabel("Add a comment")).toHaveValue("");
 });
+
+test("remove a friend added by mistake; blocked while there's a balance", async ({ page }) => {
+  const email = `typo${Date.now()}@example.com`;
+  await login(page, "ana@example.com");
+  await page.goto("/friends/new");
+  await page.getByLabel("Name").fill("Wrong Email");
+  await page.getByLabel("Email").fill(email);
+  await page.getByRole("button", { name: "Add friend" }).click();
+  await expect(page).toHaveURL(/\/friends\//);
+  page.once("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: "Remove Wrong Email" }).click();
+  await expect(page).toHaveURL(/\/dashboard\?removed=1$/);
+  await expect(page.getByText("Friend removed.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Wrong Email" })).toHaveCount(0);
+
+  // Chloe still owes Ana for the house, so removing her is refused
+  await page.locator("a:visible", { hasText: "Chloe Martin" }).first().click();
+  await expect(page).toHaveURL(/\/friends\//);
+  page.once("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: "Remove Chloe Martin" }).click();
+  await expect(page.getByText("Settle up first. You can only remove")).toBeVisible();
+});

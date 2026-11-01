@@ -9,7 +9,7 @@ import { displayName } from "@/lib/users";
 import { ExpenseList } from "@/components/expense-list";
 import { Avatar, Balance, Card, Flash, LinkButton, PageHeader } from "@/components/ui";
 import { ActionForm, SubmitButton } from "@/components/forms";
-import { resendInvite } from "@/app/actions/friends";
+import { removeFriend, resendInvite } from "@/app/actions/friends";
 
 export default async function FriendPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ invited?: string }> }) {
   const justInvited = (await searchParams).invited === "1";
@@ -64,6 +64,16 @@ export default async function FriendPage({ params, searchParams }: { params: Pro
                 ))}
               </ul>
             )}
+          </Card>
+          <Card className="mt-6 p-4">
+            <h2 className="mb-1 text-sm font-semibold">Remove friend</h2>
+            <p className="mb-3 text-xs text-muted">
+              {total.length > 0 ? "Settle up first. You can remove a friend once the balance between you is zero." : `Takes ${name} off your friends list. Shared groups and past expenses stay as they are.`}
+            </p>
+            <ActionForm action={removeFriend} confirm={`Remove ${name} from your friends?`}>
+              <input type="hidden" name="friendId" value={friend.id} />
+              <SubmitButton variant="ghost" size="sm" className="!text-danger">Remove {name}</SubmitButton>
+            </ActionForm>
           </Card>
         </aside>
       </div>
