@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { sidebar } from "@/lib/data";
 import { logout } from "@/app/actions/auth";
 import { Avatar } from "@/components/ui";
+import { Logo } from "@/components/logo";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const me = await requireUser();
@@ -14,9 +15,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ];
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-10 border-b border-border bg-bg/95 backdrop-blur">
+      <header className="sticky top-0 z-10 border-b border-border bg-bg/95 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-          <Link href="/dashboard" className="text-lg font-bold">Halves</Link>
+          <Link href="/dashboard" aria-label="Halves home"><Logo size={28} /></Link>
           <div className="flex items-center gap-3">
             <Link href="/account" className="flex items-center gap-2 text-sm font-medium hover:underline">
               <Avatar id={me.id} name={me.name} size={28} />

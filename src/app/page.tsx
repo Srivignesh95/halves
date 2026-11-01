@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { LinkButton } from "@/components/ui";
+import { Logo } from "@/components/logo";
 
 export default async function Landing() {
   if (await currentUser()) redirect("/dashboard");
@@ -13,7 +14,7 @@ export default async function Landing() {
   return (
     <main>
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-5">
-        <span className="text-lg font-bold">Halves</span>
+        <Logo size={30} />
         <nav className="flex gap-2">
           <LinkButton href="/login" variant="ghost">Log in</LinkButton>
           <LinkButton href="/signup">Sign up</LinkButton>
