@@ -7,9 +7,12 @@ import { areFriends, assertUuid } from "@/lib/access";
 import { expenseListWith, expensesWithShareFor, friendBreakdown } from "@/lib/data";
 import { displayName } from "@/lib/users";
 import { ExpenseList } from "@/components/expense-list";
-import { Avatar, Balance, Card, LinkButton, PageHeader } from "@/components/ui";
+import { Avatar, Balance, Card, Flash, LinkButton, PageHeader } from "@/components/ui";
+import { ActionForm, SubmitButton } from "@/components/forms";
+import { resendInvite } from "@/app/actions/friends";
 
-export default async function FriendPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function FriendPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ invited?: string }> }) {
+  const justInvited = (await searchParams).invited === "1";
   const me = await requireUser();
   const { id } = await params;
   assertUuid(id);
@@ -37,6 +40,14 @@ export default async function FriendPage({ params }: { params: Promise<{ id: str
           </>
         }
       />
+      {justInvited && <div className="mb-4"><Flash kind="ok">We emailed {friend.email} an invite to join Halves.</Flash></div>}
+      {!friend.passwordHash && !friend.deletedAt && (
+        <ActionForm action={resendInvite} className="mb-4 flex flex-wrap items-center gap-3 text-sm text-muted">
+          <input type="hidden" name="friendId" value={friend.id} />
+          <span>{name} hasn&apos;t joined yet. You can still add expenses with them.</span>
+          <SubmitButton variant="secondary" size="sm">Resend invite</SubmitButton>
+        </ActionForm>
+      )}
       <div className="grid items-start gap-6 lg:grid-cols-[1fr_300px]">
         <ExpenseList expenses={expenses} me={me.id} showGroup empty={`Nothing shared with ${name} yet`} />
         <aside>

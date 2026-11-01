@@ -15,6 +15,13 @@
       "when": 1793470010731,
       "tag": "0001_password_resets",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793501618198,
+      "tag": "0002_invites",
+      "breakpoints": true
     }
   ]
 }

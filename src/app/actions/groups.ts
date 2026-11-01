@@ -9,6 +9,7 @@ import { requireUser } from "@/lib/auth";
 import { assertGroupMember, UUID_RE } from "@/lib/access";
 import { befriend, findOrInvite, normaliseEmail } from "@/lib/users";
 import { logActivity } from "@/lib/activity";
+import { sendInvites } from "@/lib/invites";
 import { groupEdges } from "@/lib/data";
 import { CURRENCIES } from "@/lib/money";
 import type { ActionState } from "@/components/forms";
@@ -36,6 +37,7 @@ export async function createGroup(_: ActionState, form: FormData): Promise<Actio
   if (bad) return { error: `"${bad}" is not a valid email` };
   if (emails.length > 50) return { error: "Add at most 50 people at once" };
 
+  const invitees: Awaited<ReturnType<typeof findOrInvite>>[] = [];
   const groupId = await db.transaction(async (tx) => {
     const [g] = await tx.insert(groups).values({ name: parsed.data.name, type: parsed.data.type, defaultCurrency: parsed.data.defaultCurrency, createdById: me.id }).returning();
     await tx.insert(groupMembers).values({ groupId: g.id, userId: me.id });
@@ -45,10 +47,12 @@ export async function createGroup(_: ActionState, form: FormData): Promise<Actio
       await tx.insert(groupMembers).values({ groupId: g.id, userId: u.id }).onConflictDoNothing();
       await befriend(tx, me.id, u.id);
       ids.push(u.id);
+      invitees.push(u);
     }
     await logActivity(tx, { type: "group_created", actorId: me.id, userIds: ids, groupId: g.id, summary: `${me.name} created the group "${g.name}"` });
     return g.id;
   });
+  await sendInvites(me.name, invitees, parsed.data.name);
   redirect(`/groups/${groupId}`);
 }
 
@@ -71,14 +75,20 @@ export async function addMember(_: ActionState, form: FormData): Promise<ActionS
   await assertGroupMember(groupId, me.id);
   const email = normaliseEmail(String(form.get("email") ?? ""));
   if (!z.string().email().safeParse(email).success) return { error: "Enter a valid email" };
+  let added: Awaited<ReturnType<typeof findOrInvite>> | null = null;
   const result = await db.transaction(async (tx): Promise<ActionState> => {
     const u = await findOrInvite(tx, email, String(form.get("name") ?? ""));
     const inserted = await tx.insert(groupMembers).values({ groupId, userId: u.id }).onConflictDoNothing().returning();
     if (inserted.length === 0) return { error: `${u.name} is already in this group` };
     await befriend(tx, me.id, u.id);
     await logActivity(tx, { type: "member_added", actorId: me.id, userIds: await memberIds(tx, groupId), groupId, summary: `${me.name} added ${u.name} to the group` });
+    added = u;
     return { ok: `${u.name} added` };
   });
+  if (added) {
+    const [g] = await db.select({ name: groups.name }).from(groups).where(eq(groups.id, groupId));
+    if (await sendInvites(me.name, [added], g?.name)) return { ok: `${(added as { email: string }).email} added and invited by email` };
+  }
   revalidatePath(`/groups/${groupId}`);
   return result;
 }

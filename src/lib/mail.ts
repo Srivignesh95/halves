@@ -21,6 +21,7 @@ export async function sendMail(mail: Mail): Promise<void> {
       body: JSON.stringify({ from, to: [mail.to], subject: mail.subject, text: mail.text, html: mail.html }),
     });
     if (!res.ok) throw new Error(`Resend refused the email: ${res.status} ${await res.text()}`);
+    console.log(`[mail] sent "${mail.subject}" to ${mail.to} via Resend`);
     return;
   }
 
@@ -33,7 +34,8 @@ export async function sendMail(mail: Mail): Promise<void> {
       secure: port === 465,
       auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
     });
-    await transport.sendMail({ from, to: mail.to, subject: mail.subject, text: mail.text, html: mail.html });
+    const info = await transport.sendMail({ from, to: mail.to, subject: mail.subject, text: mail.text, html: mail.html });
+    console.log(`[mail] sent "${mail.subject}" to ${mail.to} via SMTP: ${info.response}`);
     return;
   }
 
@@ -71,6 +73,31 @@ Halves`,
   <p style="margin:24px 0"><a href="${esc(link)}" style="background:#5032c8;color:#ffffff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:600;display:inline-block">Choose a new password</a></p>
   <p style="font-size:14px;color:#5c5a6e">The link works once and expires in ${minutes} minutes. If you didn't ask for this, ignore this email and your password stays the same.</p>
   <p style="font-size:12px;color:#5c5a6e;word-break:break-all">If the button doesn't work, paste this into your browser:<br>${esc(link)}</p>
+</div>`,
+  };
+}
+
+export function inviteEmail(inviterName: string, signupLink: string, groupName?: string): Omit<Mail, "to"> {
+  const what = groupName ? `added you to the group "${groupName}" on Halves` : "added you as a friend on Halves";
+  return {
+    subject: groupName ? `${inviterName} added you to ${groupName} on Halves` : `${inviterName} added you on Halves`,
+    text: `Hi,
+
+${inviterName} ${what}, an app for splitting shared costs and keeping track of who owes what.
+
+Create your free account with this email address to see what you share:
+
+${signupLink}
+
+Anything already added for you will be waiting when you sign up. If you don't know ${inviterName}, you can ignore this email.
+
+Halves`,
+    html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#16141f">
+  <p style="font-size:18px;font-weight:700;margin:0 0 16px">Halves</p>
+  <p><strong>${esc(inviterName)}</strong> ${esc(what)}, an app for splitting shared costs and keeping track of who owes what.</p>
+  <p>Create your free account with this email address to see what you share. Anything already added for you will be waiting.</p>
+  <p style="margin:24px 0"><a href="${esc(signupLink)}" style="background:#5032c8;color:#ffffff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:600;display:inline-block">Join Halves</a></p>
+  <p style="font-size:14px;color:#5c5a6e">If you don't know ${esc(inviterName)}, you can ignore this email.</p>
 </div>`,
   };
 }

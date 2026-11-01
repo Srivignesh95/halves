@@ -13,6 +13,10 @@
   open link for that account and signs out every device. Same reply whether or not the email has an account;
   the email is sent after the response so timing doesn't tell either. Limits: 3 emails per address and
   10 requests per IP per hour. Email goes through Resend (`RESEND_API_KEY`) or any SMTP mailbox (`SMTP_*`).
+- Invites: adding a friend, creating a group or adding a member with an email that has no account emails
+  that person a sign-up link with their email filled in. One invite per address per 24 hours
+  (`users.invited_at`), with a "Resend invite" button on the friend page.
+- Every sent email is logged as `[mail] sent "<subject>" to <address>`. `npm run mail:test you@x.com` checks the settings.
 - Not built yet: Google sign-in, rate limits on log in and sign up (see checklist).
 
 ## Database

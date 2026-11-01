@@ -23,6 +23,8 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   // null = invited placeholder that has not signed up yet
   passwordHash: text("password_hash"),
+  // last time an invite email went to this (not yet signed up) person; limits invites to one a day
+  invitedAt: timestamp("invited_at", { withTimezone: true }),
   defaultCurrency: char("default_currency", { length: 3 }).notNull().default("CAD"),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   createdAt: createdAt(),

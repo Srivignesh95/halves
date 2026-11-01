@@ -4,7 +4,8 @@ import { ActionForm, SubmitButton } from "@/components/forms";
 
 export const metadata = { title: "Sign up" };
 
-export default function Signup() {
+export default async function Signup({ searchParams }: { searchParams: Promise<{ email?: string }> }) {
+  const email = ((await searchParams).email ?? "").slice(0, 200);
   return (
     <>
       <h1 className="mb-1 text-xl font-bold">Create your account</h1>
@@ -16,7 +17,7 @@ export default function Signup() {
         </div>
         <div>
           <label className="label" htmlFor="email">Email</label>
-          <input id="email" name="email" type="email" autoComplete="email" required className="field" />
+          <input id="email" name="email" type="email" autoComplete="email" required defaultValue={email} className="field" />
         </div>
         <div>
           <label className="label" htmlFor="password">Password</label>
