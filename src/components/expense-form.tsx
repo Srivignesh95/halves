@@ -152,8 +152,8 @@ export function ExpenseForm({ action, me, groups, friends, initial }: { action: 
       </div>
 
       <fieldset className="card p-4">
-        <legend className="px-1 text-sm font-semibold">Who paid</legend>
-        <ul className="space-y-2">
+        <legend className="float-left mb-3 w-full text-sm font-semibold">Who paid</legend>
+        <ul className="clear-both space-y-2">
           {people.map((p) => {
             const on = p.id in payers;
             return (
@@ -186,8 +186,8 @@ export function ExpenseForm({ action, me, groups, friends, initial }: { action: 
       </fieldset>
 
       <fieldset className="card p-4">
-        <legend className="px-1 text-sm font-semibold">Split</legend>
-        <div role="tablist" aria-label="Split type" className="mb-4 flex flex-wrap gap-1">
+        <legend className="float-left mb-3 w-full text-sm font-semibold">Split</legend>
+        <div role="tablist" aria-label="Split type" className="clear-both mb-4 grid grid-cols-2 gap-1 rounded-2xl bg-bg/60 p-1 shadow-[inset_0_0_0_1px_rgb(var(--c-border)/0.8)] sm:inline-grid sm:grid-cols-4 sm:rounded-full">
           {(Object.keys(SPLIT_LABELS) as SplitType[]).map((t) => (
             <button
               key={t}
@@ -195,13 +195,13 @@ export function ExpenseForm({ action, me, groups, friends, initial }: { action: 
               role="tab"
               aria-selected={splitType === t}
               onClick={() => setSplitType(t)}
-              className={`rounded-sm px-3 py-1.5 text-xs font-semibold ${splitType === t ? "bg-accent text-on-accent" : "bg-surface text-text hover:bg-border"}`}
+              className={`rounded-full px-3.5 py-2 text-xs font-semibold transition ${splitType === t ? "bg-accent text-on-accent shadow" : "text-text hover:bg-bg"}`}
             >
               {SPLIT_LABELS[t]}
             </button>
           ))}
         </div>
-        <ul className="space-y-2">
+        <ul className="clear-both space-y-2">
           {people.map((p) => {
             const on = included.has(p.id);
             return (

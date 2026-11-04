@@ -17,16 +17,78 @@
   --c-success: 29 112 68;
   --c-owed: 29 112 68;
   --c-owe: 180 35 44;
+  /* glass: translucent panels over the soft colour wash */
+  --glass: 255 255 255;
+  --glass-alpha: 0.72;
+  --glass-edge: 255 255 255;
+  --wash-1: 124 99 245;
+  --wash-2: 45 190 160;
+  --wash-3: 255 140 170;
   color-scheme: light;
 }
 
-html, body { background: rgb(var(--c-bg)); color: rgb(var(--c-text)); }
-body { font-feature-settings: "tnum" 1; -webkit-font-smoothing: antialiased; }
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg: 15 13 23;
+    --c-surface: 26 23 38;
+    --c-border: 46 42 66;
+    --c-border-input: 119 115 143;
+    --c-text: 242 240 250;
+    --c-text-muted: 170 166 192;
+    --c-accent: 143 123 255;
+    --c-accent-hover: 164 147 255;
+    --c-on-accent: 15 13 23;
+    --c-danger: 255 138 143;
+    --c-success: 95 216 151;
+    --c-owed: 95 216 151;
+    --c-owe: 255 138 143;
+    --glass: 28 25 42;
+    --glass-alpha: 0.66;
+    --glass-edge: 255 255 255;
+    --wash-1: 110 80 255;
+    --wash-2: 20 150 130;
+    --wash-3: 200 70 130;
+    color-scheme: dark;
+  }
+}
+
+html { background: rgb(var(--c-bg)); }
+body {
+  color: rgb(var(--c-text));
+  font-feature-settings: "tnum" 1, "cv11" 1;
+  -webkit-font-smoothing: antialiased;
+  background:
+    radial-gradient(60rem 40rem at 0% -10%, rgb(var(--wash-1) / 0.22), transparent 60%),
+    radial-gradient(50rem 36rem at 100% 0%, rgb(var(--wash-2) / 0.16), transparent 60%),
+    radial-gradient(40rem 30rem at 60% 110%, rgb(var(--wash-3) / 0.14), transparent 60%),
+    rgb(var(--c-bg));
+  background-attachment: fixed;
+}
 :focus-visible { outline: 2px solid rgb(var(--c-accent)); outline-offset: 2px; }
+::selection { background: rgb(var(--c-accent) / 0.25); }
 
 @layer components {
-  .field { @apply block w-full rounded-sm border border-border-input bg-bg px-3 py-2 text-sm text-text placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 disabled:opacity-60; }
-  .label { @apply mb-1 block text-xs font-medium text-muted; }
-  .card { @apply rounded-md border border-border bg-bg shadow-card; }
+  .glass {
+    background: rgb(var(--glass) / var(--glass-alpha));
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgb(var(--glass-edge) / 0.14);
+    box-shadow: 0 1px 0 rgb(var(--glass-edge) / 0.35) inset, 0 10px 30px -12px rgb(22 20 31 / 0.18), 0 2px 6px -2px rgb(22 20 31 / 0.08);
+  }
+  .card { @apply glass rounded-lg; }
+  .field {
+    @apply block w-full rounded-md border border-border-input/70 bg-bg/80 px-3 py-2.5 text-base text-text placeholder:text-muted/80
+      transition focus:border-accent focus:bg-bg focus:outline-none focus:ring-4 focus:ring-accent/20 disabled:opacity-60 sm:text-sm;
+  }
+  .label { @apply mb-1.5 block text-xs font-semibold text-muted; }
   .link { @apply font-medium text-accent underline-offset-2 hover:underline; }
+  .section-title { @apply mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted; }
+}
+
+/* fallback where backdrop blur isn't supported: make glass nearly opaque so text stays readable */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass { background: rgb(var(--glass) / 0.96); }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
 }

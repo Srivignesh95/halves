@@ -20,7 +20,7 @@ export default async function Activity() {
       {items.length === 0 ? (
         <EmptyState title="Nothing yet">Anything you or your friends add will show up here.</EmptyState>
       ) : (
-        <ul className="divide-y divide-border rounded-md border border-border">
+        <ul className="card divide-y divide-border/60 overflow-hidden">
           {items.map((a) => {
             const body = (
               <span className="flex items-start gap-3 px-4 py-3">
@@ -31,7 +31,7 @@ export default async function Activity() {
                 </span>
               </span>
             );
-            return <li key={a.id}>{a.expenseId ? <Link href={`/expenses/${a.expenseId}`} className="block hover:bg-surface">{body}</Link> : a.groupId ? <Link href={`/groups/${a.groupId}`} className="block hover:bg-surface">{body}</Link> : body}</li>;
+            return <li key={a.id}>{a.expenseId ? <Link href={`/expenses/${a.expenseId}`} className="block transition hover:bg-bg/50">{body}</Link> : a.groupId ? <Link href={`/groups/${a.groupId}`} className="block transition hover:bg-bg/50">{body}</Link> : body}</li>;
           })}
         </ul>
       )}

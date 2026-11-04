@@ -4,14 +4,14 @@ import { formatMoney } from "@/lib/money";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 const variants: Record<Variant, string> = {
-  primary: "bg-accent text-on-accent hover:bg-accent-hover",
-  secondary: "border border-border bg-bg text-text hover:bg-surface",
-  ghost: "text-accent hover:bg-surface",
-  danger: "bg-danger text-on-accent hover:opacity-90",
+  primary: "bg-gradient-to-b from-accent-hover to-accent text-on-accent shadow-[0_6px_16px_-6px_rgb(var(--c-accent)/0.6)] hover:brightness-110 active:translate-y-px",
+  secondary: "glass text-text hover:bg-bg/90 active:translate-y-px",
+  ghost: "text-accent hover:bg-accent/10",
+  danger: "bg-danger text-on-accent shadow-[0_6px_16px_-6px_rgb(var(--c-danger)/0.6)] hover:brightness-110 active:translate-y-px",
 };
 export function buttonClass(variant: Variant = "primary", size: "sm" | "md" = "md") {
-  return `inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-    size === "sm" ? "h-8 px-3 text-xs" : "h-10 px-4 text-sm"
+  return `inline-flex items-center justify-center gap-2 rounded-full font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+    size === "sm" ? "h-8 px-3.5 text-xs" : "h-11 px-5 text-sm"
   } ${variants[variant]}`;
 }
 
@@ -29,9 +29,9 @@ export function Card({ children, className = "" }: { children: ReactNode; classN
 
 export function PageHeader({ title, sub, actions }: { title: ReactNode; sub?: ReactNode; actions?: ReactNode }) {
   return (
-    <header className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+    <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="truncate text-xl font-bold">{title}</h1>
+        <h1 className="truncate text-2xl font-extrabold tracking-tight sm:text-3xl">{title}</h1>
         {sub && <p className="mt-1 text-sm text-muted">{sub}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -41,7 +41,11 @@ export function PageHeader({ title, sub, actions }: { title: ReactNode; sub?: Re
 
 export function EmptyState({ title, children }: { title: string; children?: ReactNode }) {
   return (
-    <div className="rounded-md border border-dashed border-border bg-surface px-6 py-10 text-center">
+    <div className="glass rounded-lg px-6 py-12 text-center">
+      <svg aria-hidden width="44" height="44" viewBox="0 0 64 64" className="mx-auto mb-3 opacity-80">
+        <path d="M30 14 A18 18 0 0 0 30 50 Z" fill="rgb(var(--c-accent))" />
+        <path d="M34 14 A18 18 0 0 1 34 50 Z" fill="none" stroke="rgb(var(--c-accent))" strokeWidth="4" />
+      </svg>
       <p className="font-semibold">{title}</p>
       {children && <div className="mt-2 text-sm text-muted">{children}</div>}
     </div>
@@ -77,7 +81,7 @@ export function Balance({ amounts, owesYou = "owes you", youOwe = "you owe", ali
 
 export function Flash({ kind, children }: { kind: "error" | "ok"; children: ReactNode }) {
   return (
-    <p role={kind === "error" ? "alert" : "status"} className={`rounded-sm border px-3 py-2 text-sm ${kind === "error" ? "border-danger/40 bg-danger/5 text-danger" : "border-success/40 bg-success/5 text-success"}`}>
+    <p role={kind === "error" ? "alert" : "status"} className={`rounded-md border px-3.5 py-2.5 text-sm font-medium ${kind === "error" ? "border-danger/30 bg-danger/10 text-danger" : "border-success/30 bg-success/10 text-success"}`}>
       {children}
     </p>
   );

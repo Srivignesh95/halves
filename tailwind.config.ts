@@ -23,7 +23,7 @@ export default {
         owed: role("owed"),
         owe: role("owe"),
       },
-      borderRadius: { sm: "6px", md: "10px", lg: "16px" },
+      borderRadius: { sm: "8px", md: "12px", lg: "20px", xl: "28px" },
       boxShadow: {
         card: "0 1px 2px rgba(22,20,31,.06), 0 1px 3px rgba(22,20,31,.10)",
         pop: "0 12px 32px rgba(22,20,31,.16)",

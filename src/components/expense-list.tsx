@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { formatMoney } from "@/lib/money";
-import { formatDate } from "@/lib/dates";
 import { categoryLabel } from "@/lib/constants";
 import { EmptyState } from "./ui";
 
@@ -32,16 +31,19 @@ export function ExpenseList({ expenses, me, showGroup = false, empty }: { expens
   if (expenses.length === 0) return <EmptyState title={empty} />;
   let lastMonth = "";
   return (
-    <ul className="divide-y divide-border rounded-md border border-border">
+    <ul className="card divide-y divide-border/60 overflow-hidden">
       {expenses.map((e) => {
         const month = e.date.toLocaleDateString("en-CA", { month: "long", year: "numeric", timeZone: "UTC" });
         const header = month !== lastMonth ? ((lastMonth = month), month) : null;
         const { payerText, net, mine } = myLine(e, me);
         return (
           <li key={e.id}>
-            {header && <div className="bg-surface px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted">{header}</div>}
-            <Link href={`/expenses/${e.id}`} className={`flex items-center gap-4 px-4 py-3 hover:bg-surface ${e.deletedAt ? "opacity-60" : ""}`}>
-              <span className="w-12 shrink-0 text-center text-xs text-muted">{formatDate(e.date).split(",")[0]}</span>
+            {header && <div className="bg-bg/40 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">{header}</div>}
+            <Link href={`/expenses/${e.id}`} className={`flex items-center gap-4 px-4 py-3.5 transition hover:bg-bg/50 ${e.deletedAt ? "opacity-60" : ""}`}>
+              <span className="flex w-11 shrink-0 flex-col items-center rounded-md bg-bg/60 py-1 leading-tight shadow-[inset_0_0_0_1px_rgb(var(--c-border)/0.7)]">
+                <span className="text-[10px] font-semibold uppercase text-muted">{e.date.toLocaleDateString("en-CA", { month: "short", timeZone: "UTC" }).replace(".", "")}</span>
+                <span className="text-base font-bold">{e.date.getUTCDate()}</span>
+              </span>
               <span className="min-w-0 flex-1">
                 <span className={`block truncate font-medium ${e.deletedAt ? "line-through" : ""}`}>
                   {e.isPayment ? "Payment" : e.description}
