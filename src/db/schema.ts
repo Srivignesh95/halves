@@ -25,6 +25,9 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash"),
   // last time an invite email went to this (not yet signed up) person; limits invites to one a day
   invitedAt: timestamp("invited_at", { withTimezone: true }),
+  // weekly "here's where you stand" email; people can turn it off on their account page
+  emailDigest: boolean("email_digest").notNull().default(true),
+  lastDigestAt: timestamp("last_digest_at", { withTimezone: true }),
   defaultCurrency: char("default_currency", { length: 3 }).notNull().default("CAD"),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   createdAt: createdAt(),
@@ -41,6 +44,14 @@ export const sessions = pgTable("sessions", {
 }, (t) => [index("sessions_user_idx").on(t.userId)]);
 
 // One row per "forgot password" request. Only the sha256 of the emailed token is stored.
+// "Send reminder": one row per reminder, used to allow one a day per pair of people.
+export const reminders = pgTable("reminders", {
+  id: id(),
+  fromId: uuid("from_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  toId: uuid("to_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: createdAt(),
+}, (t) => [index("reminders_pair_idx").on(t.fromId, t.toId, t.createdAt)]);
+
 export const passwordResets = pgTable("password_resets", {
   id: id(),
   // null when the email matched no account: the row still counts toward rate limits

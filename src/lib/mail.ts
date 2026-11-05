@@ -101,3 +101,73 @@ Halves`,
 </div>`,
   };
 }
+
+type Line = { name: string; amounts: [string, number][] }; // positive = they owe you
+const money = (c: number, cur: string) => {
+  try { return new Intl.NumberFormat("en-CA", { style: "currency", currency: cur, currencyDisplay: "narrowSymbol" }).format(c / 100); } catch { return `${(c / 100).toFixed(2)} ${cur}`; }
+};
+const amountsText = (a: [string, number][]) => a.map(([c, v]) => money(Math.abs(v), c)).join(" + ");
+
+/** "Ana sent you a reminder": what you owe one person. */
+export function reminderEmail(fromName: string, owed: [string, number][], link: string, note?: string): Omit<Mail, "to"> {
+  const total = amountsText(owed);
+  return {
+    subject: `Reminder from ${fromName}: you owe ${total}`,
+    text: `Hi,
+
+${fromName} sent you a friendly reminder on Halves. You owe ${fromName} ${total}.
+${note ? `\nTheir note: "${note}"\n` : ""}
+See the details and record a payment here:
+${link}
+
+Halves`,
+    html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#16141f">
+  <p style="font-size:18px;font-weight:700;margin:0 0 16px">Halves</p>
+  <p>${esc(fromName)} sent you a friendly reminder.</p>
+  <p style="font-size:14px;color:#5c5a6e;margin:20px 0 4px">You owe ${esc(fromName)}</p>
+  <p style="font-size:30px;font-weight:800;color:#b4232c;margin:0 0 20px">${esc(total)}</p>
+  ${note ? `<p style="border-left:3px solid #e4e3ec;padding-left:12px;color:#5c5a6e">${esc(note)}</p>` : ""}
+  <p style="margin:24px 0"><a href="${esc(link)}" style="background:#5032c8;color:#ffffff;padding:12px 20px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block">See details</a></p>
+</div>`,
+  };
+}
+
+/** Balance summary: everyone you owe and everyone who owes you. */
+export function digestEmail(name: string, lines: Line[], link: string, settingsLink: string): Omit<Mail, "to"> {
+  const owed = lines.flatMap((l) => l.amounts.filter(([, v]) => v > 0).map(([c, v]) => ({ who: l.name, c, v })));
+  const owe = lines.flatMap((l) => l.amounts.filter(([, v]) => v < 0).map(([c, v]) => ({ who: l.name, c, v: -v })));
+  const sum = (xs: { c: string; v: number }[]) => {
+    const m = new Map<string, number>();
+    for (const x of xs) m.set(x.c, (m.get(x.c) ?? 0) + x.v);
+    return [...m.entries()].map(([c, v]) => money(v, c)).join(" + ") || money(0, "CAD");
+  };
+  const row = (who: string, amt: string, colour: string) =>
+    `<tr><td style="padding:6px 0">${esc(who)}</td><td style="padding:6px 0;text-align:right;font-weight:700;color:${colour}">${esc(amt)}</td></tr>`;
+  return {
+    subject: `Your Halves balances: you're owed ${sum(owed)}, you owe ${sum(owe)}`,
+    text: `Hi ${name},
+
+Here's where you stand on Halves.
+
+You are owed ${sum(owed)}
+${owed.map((x) => `  ${x.who} owes you ${money(x.v, x.c)}`).join("\n") || "  Nobody owes you anything."}
+
+You owe ${sum(owe)}
+${owe.map((x) => `  You owe ${x.who} ${money(x.v, x.c)}`).join("\n") || "  You don't owe anything."}
+
+Open Halves: ${link}
+Stop these emails: ${settingsLink}`,
+    html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#16141f">
+  <p style="font-size:18px;font-weight:700;margin:0 0 16px">Halves</p>
+  <p>Hi ${esc(name)}, here's where you stand.</p>
+  <p style="font-size:13px;color:#5c5a6e;margin:20px 0 4px;text-transform:uppercase;letter-spacing:.06em">You are owed</p>
+  <p style="font-size:26px;font-weight:800;color:#1d7044;margin:0">${esc(sum(owed))}</p>
+  <table style="width:100%;font-size:15px;border-collapse:collapse">${owed.map((x) => row(x.who, money(x.v, x.c), "#1d7044")).join("") || `<tr><td style="color:#5c5a6e;padding:6px 0">Nobody owes you anything.</td></tr>`}</table>
+  <p style="font-size:13px;color:#5c5a6e;margin:20px 0 4px;text-transform:uppercase;letter-spacing:.06em">You owe</p>
+  <p style="font-size:26px;font-weight:800;color:#b4232c;margin:0">${esc(sum(owe))}</p>
+  <table style="width:100%;font-size:15px;border-collapse:collapse">${owe.map((x) => row(x.who, money(x.v, x.c), "#b4232c")).join("") || `<tr><td style="color:#5c5a6e;padding:6px 0">You don't owe anything.</td></tr>`}</table>
+  <p style="margin:28px 0"><a href="${esc(link)}" style="background:#5032c8;color:#ffffff;padding:12px 20px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block">Open Halves</a></p>
+  <p style="font-size:12px;color:#5c5a6e">You get this weekly while you have open balances. <a href="${esc(settingsLink)}" style="color:#5c5a6e">Turn it off</a>.</p>
+</div>`,
+  };
+}

@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { deleteAccount, updateAccount } from "@/app/actions/auth";
+import { emailMyBalances } from "@/app/actions/notifications";
 import { ActionForm, SubmitButton } from "@/components/forms";
 import { Card, PageHeader } from "@/components/ui";
 import { CURRENCIES } from "@/lib/money";
@@ -24,7 +25,21 @@ export default async function Account() {
                 {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>
+            <label className="flex items-start gap-3 text-sm">
+              <input type="checkbox" name="emailDigest" defaultChecked={me.emailDigest} className="mt-1" />
+              <span>
+                <strong className="block">Weekly balance email</strong>
+                <span className="text-muted">Every Monday, a summary of who owes you and who you owe. Only sent when you have open balances.</span>
+              </span>
+            </label>
             <SubmitButton>Save</SubmitButton>
+          </ActionForm>
+        </Card>
+        <Card className="p-5">
+          <h2 className="mb-1 font-semibold">Your balances by email</h2>
+          <p className="mb-3 text-sm text-muted">Get the summary right now, to {me.email}.</p>
+          <ActionForm action={emailMyBalances}>
+            <SubmitButton variant="secondary">Email me my balances</SubmitButton>
           </ActionForm>
         </Card>
         <Card className="p-5">

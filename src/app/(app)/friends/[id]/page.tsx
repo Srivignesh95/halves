@@ -10,6 +10,7 @@ import { ExpenseList } from "@/components/expense-list";
 import { Avatar, Balance, Card, Flash, LinkButton, PageHeader } from "@/components/ui";
 import { ActionForm, SubmitButton } from "@/components/forms";
 import { removeFriend, resendInvite } from "@/app/actions/friends";
+import { sendReminder } from "@/app/actions/notifications";
 
 export default async function FriendPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ invited?: string }> }) {
   const justInvited = (await searchParams).invited === "1";
@@ -65,6 +66,18 @@ export default async function FriendPage({ params, searchParams }: { params: Pro
               </ul>
             )}
           </Card>
+          {total.some(([, v]) => v > 0) && !friend.deletedAt && (
+            <Card className="mt-6 p-4">
+              <h2 className="mb-1 text-sm font-semibold">Send a reminder</h2>
+              <p className="mb-3 text-xs text-muted">Emails {name} how much they owe you. One reminder a day.</p>
+              <ActionForm action={sendReminder} className="space-y-2" resetOnSuccess>
+                <input type="hidden" name="friendId" value={friend.id} />
+                <label htmlFor="note" className="sr-only">Add a note (optional)</label>
+                <input id="note" name="note" maxLength={300} placeholder="Add a note (optional)" className="field" />
+                <SubmitButton size="sm">Send reminder</SubmitButton>
+              </ActionForm>
+            </Card>
+          )}
           <Card className="mt-6 p-4">
             <h2 className="mb-1 text-sm font-semibold">Remove friend</h2>
             <p className="mb-3 text-xs text-muted">

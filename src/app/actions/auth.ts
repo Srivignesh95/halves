@@ -63,7 +63,7 @@ export async function updateAccount(_: ActionState, form: FormData): Promise<Act
   const user = await requireUser();
   const parsed = Account.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
-  await db.update(users).set(parsed.data).where(eq(users.id, user.id));
+  await db.update(users).set({ ...parsed.data, emailDigest: form.get("emailDigest") === "on" }).where(eq(users.id, user.id));
   return { ok: "Saved" };
 }
 
