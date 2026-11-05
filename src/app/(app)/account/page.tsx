@@ -1,6 +1,9 @@
 import { requireUser } from "@/lib/auth";
 import { deleteAccount, updateAccount } from "@/app/actions/auth";
 import { emailMyBalances } from "@/app/actions/notifications";
+import { AvatarUploader } from "@/components/avatar-uploader";
+import { eq } from "drizzle-orm";
+import { avatars, db } from "@/lib/db";
 import { ActionForm, SubmitButton } from "@/components/forms";
 import { Card, PageHeader } from "@/components/ui";
 import { CURRENCIES } from "@/lib/money";
@@ -9,10 +12,15 @@ export const metadata = { title: "Your account" };
 
 export default async function Account() {
   const me = await requireUser();
+  const [photo] = await db.select({ at: avatars.updatedAt }).from(avatars).where(eq(avatars.userId, me.id)).limit(1);
   return (
     <>
       <PageHeader title="Your account" sub={me.email} />
       <div className="max-w-lg space-y-6">
+        <Card className="p-5">
+          <h2 className="mb-4 font-semibold">Profile photo</h2>
+          <AvatarUploader userId={me.id} name={me.name} version={photo ? photo.at.getTime() : 0} hasPhoto={!!photo} />
+        </Card>
         <Card className="p-5">
           <ActionForm action={updateAccount} className="space-y-4">
             <div>

@@ -2,6 +2,7 @@
 // Money is integer cents + ISO 4217 currency. Never floats.
 import { relations, sql } from "drizzle-orm";
 import {
+  customType,
   boolean, char, check, date, index, integer, jsonb, numeric, pgEnum, pgTable, primaryKey, text, timestamp, unique, uuid,
 } from "drizzle-orm/pg-core";
 
@@ -44,6 +45,16 @@ export const sessions = pgTable("sessions", {
 }, (t) => [index("sessions_user_idx").on(t.userId)]);
 
 // One row per "forgot password" request. Only the sha256 of the emailed token is stored.
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
+
+// Profile photos: small square images (resized in the browser before upload), one per user.
+export const avatars = pgTable("avatars", {
+  userId: uuid("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  data: bytea("data").notNull(),
+  mime: text("mime").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // "Send reminder": one row per reminder, used to allow one a day per pair of people.
 export const reminders = pgTable("reminders", {
   id: id(),

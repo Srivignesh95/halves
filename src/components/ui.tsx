@@ -53,7 +53,16 @@ export function EmptyState({ title, children }: { title: string; children?: Reac
 }
 
 const tints = ["bg-accent/15 text-accent", "bg-owed/15 text-owed", "bg-owe/15 text-owe", "bg-text/10 text-text", "bg-accent/25 text-accent-hover", "bg-muted/20 text-text"];
-export function Avatar({ id, name, size = 32 }: { id: string; name: string; size?: number }) {
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function Avatar({ id, name, size = 32, v }: { id: string; name: string; size?: number; v?: number }) {
+  if (UUID.test(id)) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={`/api/avatar/${id}${v ? `?v=${v}` : ""}`} alt="" aria-hidden width={size} height={size} loading="lazy" decoding="async"
+        className="shrink-0 rounded-full bg-surface object-cover" style={{ width: size, height: size }} />
+    );
+  }
   let h = 0;
   for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   const initials = name.split(/\s+/).map((p) => p[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "?";

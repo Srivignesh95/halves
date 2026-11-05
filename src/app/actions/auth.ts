@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { eq, or } from "drizzle-orm";
 import { z } from "zod";
-import { db, friendships, groupMembers, sessions, users } from "@/lib/db";
+import { avatars, db, friendships, groupMembers, sessions, users } from "@/lib/db";
 import { endSession, requireUser, startSession } from "@/lib/auth";
 import { normaliseEmail } from "@/lib/users";
 import { edgesForUser } from "@/lib/data";
@@ -74,6 +74,7 @@ export async function deleteAccount(_: ActionState, form: FormData): Promise<Act
   // anonymise rather than hard delete so other people's expense history stays correct
   await db.transaction(async (tx) => {
     await tx.delete(sessions).where(eq(sessions.userId, user.id));
+    await tx.delete(avatars).where(eq(avatars.userId, user.id));
     await tx.delete(friendships).where(or(eq(friendships.userId, user.id), eq(friendships.friendId, user.id)));
     await tx.delete(groupMembers).where(eq(groupMembers.userId, user.id));
     await tx.update(users).set({ name: "Deleted user", email: `deleted-${user.id}@invalid`, passwordHash: null, deletedAt: new Date() }).where(eq(users.id, user.id));

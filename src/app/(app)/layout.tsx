@@ -5,6 +5,8 @@ import { logout } from "@/app/actions/auth";
 import { Avatar } from "@/components/ui";
 import { Logo } from "@/components/logo";
 import { NavLink } from "@/components/nav-link";
+import { eq } from "drizzle-orm";
+import { avatars, db } from "@/lib/db";
 
 const icons = {
   home: "M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z",
@@ -17,7 +19,11 @@ const Icon = ({ d }: { d: string }) => (
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const me = await requireUser();
-  const { groups, friends } = await sidebar(me.id);
+  const [{ groups, friends }, [photo]] = await Promise.all([
+    sidebar(me.id),
+    db.select({ at: avatars.updatedAt }).from(avatars).where(eq(avatars.userId, me.id)).limit(1),
+  ]);
+  const v = photo ? photo.at.getTime() : 0;
   return (
     <div className="min-h-screen">
       <header className="glass sticky top-0 z-20 rounded-none border-x-0 border-t-0 pt-[env(safe-area-inset-top)]">
@@ -25,7 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Link href="/dashboard" aria-label="Halves home"><Logo size={30} /></Link>
           <div className="flex items-center gap-2">
             <Link href="/account" className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-sm font-medium transition hover:bg-bg/60">
-              <Avatar id={me.id} name={me.name} size={30} />
+              <Avatar id={me.id} name={me.name} size={30} v={v || undefined} />
               <span className="hidden sm:inline">{me.name}</span>
             </Link>
             <form action={logout}>
