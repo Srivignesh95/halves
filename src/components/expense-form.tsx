@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { ActionForm, SubmitButton, type FormAction } from "./forms";
 import { CATEGORIES, RECURRENCES } from "@/lib/constants";
-import { CURRENCIES, formatMoney, parseMoney } from "@/lib/money";
+import { CURRENCIES, centsToInput, formatMoney, isCurrency, parseMoney } from "@/lib/money";
+import { ReceiptPanel, type ItemSplit, type ReceiptFill } from "./receipt-panel";
 import { allocate } from "@/lib/splits";
 
 type Person = { id: string; name: string };
@@ -40,6 +41,25 @@ export function ExpenseForm({ action, me, groups, friends, initial }: { action: 
   const [payers, setPayers] = useState<Record<string, string>>(Object.fromEntries(initial.payers.map((p) => [p.userId, p.amount])));
   const [included, setIncluded] = useState<Set<string>>(new Set(initial.participants.map((p) => p.userId)));
   const [values, setValues] = useState<Record<string, string>>(Object.fromEntries(initial.participants.map((p) => [p.userId, p.value])));
+  const [fromItems, setFromItems] = useState(false);
+
+  function fillFromReceipt(f: ReceiptFill) {
+    if (f.description !== undefined) setDescription(f.description.slice(0, 120));
+    if (f.amount !== undefined) setAmount(f.amount);
+    if (f.date) setDate(f.date);
+    if (f.currency && isCurrency(f.currency)) setCurrency(f.currency);
+  }
+  function applyItemSplit(s: ItemSplit) {
+    if (!s) {
+      if (fromItems) { setSplitType("equal"); setFromItems(false); }
+      return;
+    }
+    setFromItems(true);
+    setAmount(centsToInput(s.amountCents));
+    setSplitType("exact");
+    setIncluded(new Set(Object.keys(s.owed)));
+    setValues(Object.fromEntries(Object.entries(s.owed).map(([id, c]) => [id, centsToInput(c)])));
+  }
 
   const people: Person[] = useMemo(() => {
     if (groupId) return groups.find((g) => g.id === groupId)?.members ?? [];
@@ -108,6 +128,7 @@ export function ExpenseForm({ action, me, groups, friends, initial }: { action: 
 
   return (
     <ActionForm action={action} className="space-y-6">
+      {!initial.id && <ReceiptPanel people={people} me={me.id} currency={currency} onFill={fillFromReceipt} onItemSplit={applyItemSplit} />}
       <input type="hidden" name="payload" value={payload} />
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -187,6 +208,7 @@ export function ExpenseForm({ action, me, groups, friends, initial }: { action: 
 
       <fieldset className="card p-4">
         <legend className="float-left mb-3 w-full text-sm font-semibold">Split</legend>
+        {fromItems && <p className="clear-both mb-3 rounded-md bg-accent/10 px-3 py-2 text-xs font-medium text-accent">Filled in from the receipt items above. Change items there, or edit the amounts here.</p>}
         <div role="tablist" aria-label="Split type" className="clear-both mb-4 grid grid-cols-2 gap-1 rounded-2xl bg-bg/60 p-1 shadow-[inset_0_0_0_1px_rgb(var(--c-border)/0.8)] sm:inline-grid sm:grid-cols-4 sm:rounded-full">
           {(Object.keys(SPLIT_LABELS) as SplitType[]).map((t) => (
             <button

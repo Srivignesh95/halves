@@ -55,6 +55,14 @@ export const avatars = pgTable("avatars", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Receipt scans, kept only to limit how many a person can do per day (the photo itself is not stored).
+export const receiptScans = pgTable("receipt_scans", {
+  id: id(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  ok: boolean("ok").notNull().default(true),
+  createdAt: createdAt(),
+}, (t) => [index("receipt_scans_user_idx").on(t.userId, t.createdAt)]);
+
 // "Send reminder": one row per reminder, used to allow one a day per pair of people.
 export const reminders = pgTable("reminders", {
   id: id(),

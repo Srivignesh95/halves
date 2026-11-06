@@ -31,7 +31,7 @@ Charts by category and month,insights,could,yes,no,Pro on the original
 Default split per group,groups,could,yes,no,Pro on the original
 Offline entry,mobile,could,yes,no,
 Receipt photos,expenses,could,yes,no,
-Receipt scanning and itemization (OCR),expenses,could,yes,skip,needs a paid OCR provider; revisit after launch
+Receipt scanning and itemization (OCR),expenses,could,yes,yes,"Claude Haiku 5.5; split total or by item, tax only on taxed lines; free (Pro on the original)"
 Currency conversion at live rates,money,could,yes,skip,needs your own exchange-rate API key and terms
 Card and bank transaction import,integrations,could,yes,skip,US banking aggregator contract
 Venmo / PayPal / Paytm hand-off,integrations,could,yes,skip,partner deals owned by the original
