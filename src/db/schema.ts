@@ -55,6 +55,18 @@ export const avatars = pgTable("avatars", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// The photo attached to an expense. On Vercel it lives in a private Blob store (blobUrl);
+// without a Blob token (local dev and tests) the bytes are kept in `data` instead.
+export const expenseReceipts = pgTable("expense_receipts", {
+  expenseId: uuid("expense_id").primaryKey().references(() => expenses.id, { onDelete: "cascade" }),
+  blobUrl: text("blob_url"),
+  data: bytea("data"),
+  mime: text("mime").notNull(),
+  size: integer("size").notNull(),
+  uploadedBy: uuid("uploaded_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: createdAt(),
+});
+
 // Receipt scans, kept only to limit how many a person can do per day (the photo itself is not stored).
 export const receiptScans = pgTable("receipt_scans", {
   id: id(),
@@ -195,6 +207,7 @@ export const expensesRelations = relations(expenses, ({ one, many }) => ({
   shares: many(expenseShares),
   comments: many(comments),
   revisions: many(expenseRevisions),
+  receipt: one(expenseReceipts, { fields: [expenses.id], references: [expenseReceipts.expenseId] }),
 }));
 export const expenseSharesRelations = relations(expenseShares, ({ one }) => ({
   expense: one(expenses, { fields: [expenseShares.expenseId], references: [expenses.id] }),
@@ -214,3 +227,6 @@ export const activitiesRelations = relations(activities, ({ one }) => ({
 }));
 
 export type User = typeof users.$inferSelect;
+export const expenseReceiptsRelations = relations(expenseReceipts, ({ one }) => ({
+  expense: one(expenses, { fields: [expenseReceipts.expenseId], references: [expenses.id] }),
+}));

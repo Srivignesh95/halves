@@ -13,6 +13,7 @@ export type ExpenseRowData = {
   isPayment: boolean;
   deletedAt: Date | null;
   group: { id: string; name: string } | null;
+  receipt?: { expenseId: string } | null;
   shares: { userId: string; paidCents: number; owedCents: number; user: { id: string; name: string } }[];
 };
 
@@ -47,6 +48,11 @@ export function ExpenseList({ expenses, me, showGroup = false, empty }: { expens
               <span className="min-w-0 flex-1">
                 <span className={`block truncate font-medium ${e.deletedAt ? "line-through" : ""}`}>
                   {e.isPayment ? "Payment" : e.description}
+                  {e.receipt && (
+                    <svg role="img" aria-label="has a receipt photo" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="ml-1.5 inline-block align-[-1px] text-muted">
+                      <path d="m21 12-8.6 8.6a6 6 0 0 1-8.5-8.5l8.6-8.6a4 4 0 0 1 5.7 5.7l-8.6 8.6a2 2 0 0 1-2.8-2.8l7.9-7.9" />
+                    </svg>
+                  )}
                   {e.deletedAt && <span className="ml-2 text-xs font-normal no-underline">(deleted)</span>}
                 </span>
                 <span className="block truncate text-xs text-muted">

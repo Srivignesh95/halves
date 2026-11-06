@@ -10,6 +10,7 @@ import { assertGroupMember, UUID_RE } from "@/lib/access";
 import { befriend, findOrInvite, normaliseEmail } from "@/lib/users";
 import { logActivity } from "@/lib/activity";
 import { sendInvites } from "@/lib/invites";
+import { removeReceiptsForGroup } from "@/lib/receipt-store";
 import { groupEdges } from "@/lib/data";
 import { CURRENCIES } from "@/lib/money";
 import type { ActionState } from "@/components/forms";
@@ -117,6 +118,7 @@ export async function deleteGroup(_: ActionState, form: FormData): Promise<Actio
   await assertGroupMember(groupId, me.id);
   const [g] = await db.select().from(groups).where(eq(groups.id, groupId));
   if ((await groupEdges(groupId, g.simplifyDebts)).length > 0) return { error: "Settle every balance in the group before deleting it" };
+  await removeReceiptsForGroup(groupId);
   await db.delete(groups).where(eq(groups.id, groupId));
   redirect("/dashboard");
 }

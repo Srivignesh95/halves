@@ -12,6 +12,7 @@ import { buildShares, computeOwed, SplitError, type Participant } from "@/lib/sp
 import { CURRENCIES, formatMoney, parseMoney } from "@/lib/money";
 import { fromISODate, nextOccurrence } from "@/lib/dates";
 import { CATEGORIES } from "@/lib/constants";
+import { removeReceiptImage, saveReceiptImage } from "@/lib/receipt-store";
 import type { ActionState } from "@/components/forms";
 
 const uuid = z.string().regex(UUID_RE, "Bad id");
@@ -121,7 +122,18 @@ export async function saveExpense(_: ActionState, form: FormData): Promise<Actio
     await logActivity(tx, { type: "expense_added", actorId: me.id, userIds: people, groupId: input.groupId, expenseId: e.id, summary: `${me.name} added ${what}` });
     return e.id;
   });
-  redirect(`/expenses/${id}`);
+
+  // the photo is stored after the expense, so a storage hiccup never loses the expense itself
+  let photoProblem = "";
+  const photo = form.get("receiptPhoto");
+  try {
+    if (photo instanceof File && photo.size > 0) await saveReceiptImage(id, Buffer.from(await photo.arrayBuffer()), me.id);
+    else if (form.get("removeReceipt") === "1") await removeReceiptImage(id);
+  } catch (e) {
+    console.error("[receipt photo]", e);
+    photoProblem = (e as Error).message || "The photo couldn't be saved";
+  }
+  redirect(`/expenses/${id}${photoProblem ? `?photo=${encodeURIComponent(photoProblem)}` : ""}`);
 }
 
 async function loadVisible(id: string, me: string) {

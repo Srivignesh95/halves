@@ -87,4 +87,5 @@ export async function sidebar(userId: string) {
 export const expenseListWith = {
   shares: { columns: { userId: true, paidCents: true, owedCents: true }, with: { user: { columns: { id: true, name: true } } } },
   group: { columns: { id: true, name: true } },
+  receipt: { columns: { expenseId: true } },
 } as const;

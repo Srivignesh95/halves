@@ -78,6 +78,16 @@ test("scan a receipt and split it by item: tax only on taxed items, cents add up
   await expect(table).toContainText("$22.34");
   await expect(table).toContainText("$24.60");
   await expect(table).toContainText("$46.94");
+
+  // the scanned photo was kept with the expense
+  const img = page.getByRole("img", { name: "Receipt for Corner Bistro" });
+  await expect(img).toBeVisible();
+  const res = await page.request.get((await img.getAttribute("src"))!);
+  expect(res.status()).toBe(200);
+  expect(res.headers()["content-type"]).toBe("image/jpeg");
+  // and the list shows it has one
+  await page.goto("/expenses?q=Corner");
+  await expect(page.getByRole("img", { name: "has a receipt photo" })).toBeVisible();
 });
 
 test("a changed price that no longer matches the receipt total is flagged", async ({ page }) => {

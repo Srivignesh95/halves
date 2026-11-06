@@ -4,7 +4,7 @@ import postgres from "postgres";
 async function main() {
   if (process.env.NODE_ENV === "production") throw new Error("Refusing to reset a production database");
   const sql = postgres(process.env.DATABASE_URL!, { max: 1, onnotice: () => {} });
-  await sql`truncate users, sessions, password_resets, reminders, avatars, receipt_scans, friendships, groups, group_members, expenses, expense_shares, comments, expense_revisions, activities cascade`;
+  await sql`truncate users, sessions, password_resets, reminders, avatars, receipt_scans, expense_receipts, friendships, groups, group_members, expenses, expense_shares, comments, expense_revisions, activities cascade`;
   await sql.end();
   console.log("Database wiped");
 }

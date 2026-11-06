@@ -11,7 +11,8 @@ import { formatMoney } from "@/lib/money";
 import { formatDate } from "@/lib/dates";
 import { categoryLabel, RECURRENCES } from "@/lib/constants";
 
-export default async function ExpenseDetail({ params }: { params: Promise<{ id: string }> }) {
+export default async function ExpenseDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ photo?: string }> }) {
+  const photoProblem = (await searchParams).photo?.slice(0, 200);
   const me = await requireUser();
   const { id } = await params;
   assertUuid(id);
@@ -23,6 +24,7 @@ export default async function ExpenseDetail({ params }: { params: Promise<{ id: 
       createdBy: { columns: { name: true } },
       comments: { with: { user: { columns: { id: true, name: true } } }, orderBy: asc(comments.createdAt) },
       revisions: { with: { editor: { columns: { name: true } } }, orderBy: desc(expenseRevisions.createdAt), limit: 20 },
+      receipt: { columns: { createdAt: true, size: true } },
     },
   });
   if (!e || !(await canSeeExpense(e, me.id))) notFound();
@@ -98,6 +100,17 @@ export default async function ExpenseDetail({ params }: { params: Promise<{ id: 
         </div>
 
         <aside className="space-y-6">
+          {photoProblem && <Flash kind="error">The expense was saved, but the photo wasn&apos;t: {photoProblem}</Flash>}
+          {e.receipt && (
+            <Card className="p-4">
+              <h2 className="mb-3 text-sm font-semibold">Receipt</h2>
+              <a href={`/api/receipt/${e.id}?v=${e.receipt.createdAt.getTime()}`} target="_blank" rel="noopener" className="block overflow-hidden rounded-md shadow-[0_0_0_1px_rgb(var(--c-border))]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`/api/receipt/${e.id}?v=${e.receipt.createdAt.getTime()}`} alt={`Receipt for ${e.description}`} className="max-h-96 w-full bg-white object-contain" loading="lazy" />
+              </a>
+              <p className="mt-2 text-xs text-muted">Tap to open full size.</p>
+            </Card>
+          )}
           <Card className="p-4">
             <h2 className="mb-3 text-sm font-semibold">Comments</h2>
             {e.comments.length === 0 && <p className="mb-3 text-sm text-muted">No comments yet.</p>}

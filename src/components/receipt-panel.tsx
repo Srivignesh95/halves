@@ -7,6 +7,7 @@ import { splitByItem, type TipMode } from "@/lib/itemize";
 import { formatMoney, parseMoney, centsToInput } from "@/lib/money";
 import { shrinkPhoto } from "@/lib/image-client";
 import { Button, Flash } from "./ui";
+import { isStaleDeployError, reloadForNewVersion } from "@/lib/stale";
 
 type Person = { id: string; name: string };
 type Item = { key: number; name: string; price: string; taxed: boolean; taxCodes: string[]; people: string[] };
@@ -20,12 +21,13 @@ export type ItemSplit = { amountCents: number; owed: Record<string, number> } | 
  * onFill: put merchant, total, date and currency into the form.
  * onItemSplit: the exact amount each person owes from the items (null = go back to the normal split).
  */
-export function ReceiptPanel({ people, me, currency, onFill, onItemSplit }: {
+export function ReceiptPanel({ people, me, currency, onFill, onItemSplit, onPhoto }: {
   people: Person[];
   me: string;
   currency: string;
   onFill: (f: ReceiptFill) => void;
   onItemSplit: (s: ItemSplit) => void;
+  onPhoto?: (b: Blob) => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<"idle" | "reading" | "done">("idle");
@@ -51,6 +53,7 @@ export function ReceiptPanel({ people, me, currency, onFill, onItemSplit }: {
       data.set("receipt", new File([blob], "receipt.jpg", { type: "image/jpeg" }));
       const res = await scanReceipt(data);
       if (!res.ok) throw new Error(res.error);
+      onPhoto?.(blob); // keep the photo with the expense
       const r = res.receipt;
       setReceipt(r);
       const everyone = people.map((p) => p.id);
@@ -64,6 +67,7 @@ export function ReceiptPanel({ people, me, currency, onFill, onItemSplit }: {
       setStatus("done");
       setNote(`${res.left} scan${res.left === 1 ? "" : "s"} left today.`);
     } catch (e) {
+      if (isStaleDeployError(e) && reloadForNewVersion()) return;
       const msg = (e as Error).message;
       setError(msg === "unreadable" ? "That photo couldn't be opened. Try a JPEG or PNG." : msg);
       setStatus(receipt ? "done" : "idle");

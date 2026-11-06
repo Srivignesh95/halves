@@ -43,6 +43,13 @@
       "when": 1793926261444,
       "tag": "0005_receipt_scans",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793928149830,
+      "tag": "0006_expense_receipts",
+      "breakpoints": true
     }
   ]
 }

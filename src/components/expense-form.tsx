@@ -5,6 +5,7 @@ import { ActionForm, SubmitButton, type FormAction } from "./forms";
 import { CATEGORIES, RECURRENCES } from "@/lib/constants";
 import { CURRENCIES, centsToInput, formatMoney, isCurrency, parseMoney } from "@/lib/money";
 import { ReceiptPanel, type ItemSplit, type ReceiptFill } from "./receipt-panel";
+import { ReceiptPhotoField } from "./receipt-photo-field";
 import { allocate } from "@/lib/splits";
 
 type Person = { id: string; name: string };
@@ -24,6 +25,8 @@ export type ExpenseFormInitial = {
   splitType: SplitType;
   payers: { userId: string; amount: string }[];
   participants: { userId: string; value: string }[];
+  /** when this expense already has a photo: its version, so the preview isn't a stale cached copy */
+  receiptVersion?: number;
 };
 
 const SPLIT_LABELS: Record<SplitType, string> = { equal: "Equally", exact: "Exact amounts", percent: "Percentages", shares: "Shares" };
@@ -42,6 +45,7 @@ export function ExpenseForm({ action, me, groups, friends, initial }: { action: 
   const [included, setIncluded] = useState<Set<string>>(new Set(initial.participants.map((p) => p.userId)));
   const [values, setValues] = useState<Record<string, string>>(Object.fromEntries(initial.participants.map((p) => [p.userId, p.value])));
   const [fromItems, setFromItems] = useState(false);
+  const [photo, setPhoto] = useState<Blob | null>(null);
 
   function fillFromReceipt(f: ReceiptFill) {
     if (f.description !== undefined) setDescription(f.description.slice(0, 120));
@@ -128,7 +132,7 @@ export function ExpenseForm({ action, me, groups, friends, initial }: { action: 
 
   return (
     <ActionForm action={action} className="space-y-6">
-      {!initial.id && <ReceiptPanel people={people} me={me.id} currency={currency} onFill={fillFromReceipt} onItemSplit={applyItemSplit} />}
+      {!initial.id && <ReceiptPanel people={people} me={me.id} currency={currency} onFill={fillFromReceipt} onItemSplit={applyItemSplit} onPhoto={setPhoto} />}
       <input type="hidden" name="payload" value={payload} />
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -266,6 +270,12 @@ export function ExpenseForm({ action, me, groups, friends, initial }: { action: 
         <label className="label" htmlFor="notes">Notes (optional)</label>
         <textarea id="notes" className="field" rows={2} maxLength={1000} value={notes} onChange={(e) => setNotes(e.target.value)} />
       </div>
+
+      <ReceiptPhotoField
+        existingUrl={initial.id && initial.receiptVersion ? `/api/receipt/${initial.id}?v=${initial.receiptVersion}` : null}
+        photo={photo}
+        onPhoto={setPhoto}
+      />
 
       <div className="flex gap-2">
         <SubmitButton>{initial.id ? "Save changes" : "Save expense"}</SubmitButton>

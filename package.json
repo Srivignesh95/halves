@@ -20,6 +20,7 @@
     "mail:test": "node scripts/test-mail.mjs"
   },
   "dependencies": {
+    "@vercel/blob": "2.8.2",
     "bcryptjs": "3.0.3",
     "drizzle-orm": "0.45.4",
     "heic2any": "0.0.4",

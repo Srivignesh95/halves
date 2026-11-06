@@ -16,7 +16,7 @@ export default async function EditExpense({ params }: { params: Promise<{ id: st
   const me = await requireUser();
   const { id } = await params;
   assertUuid(id);
-  const e = await db.query.expenses.findFirst({ where: eq(expenses.id, id), with: { shares: { with: { user: { columns: { id: true, name: true } } } } } });
+  const e = await db.query.expenses.findFirst({ where: eq(expenses.id, id), with: { shares: { with: { user: { columns: { id: true, name: true } } } }, receipt: { columns: { createdAt: true } } } });
   if (!e || !(await canSeeExpense(e, me.id))) notFound();
   if (e.isPayment || e.deletedAt) redirect(`/expenses/${id}`);
   const { groups, friends } = await expenseFormOptions(me.id);
@@ -46,6 +46,7 @@ export default async function EditExpense({ params }: { params: Promise<{ id: st
             recurrence: e.recurrence,
             splitType: e.splitType,
             payers: payers.map((s) => ({ userId: s.userId, amount: centsToInput(s.paidCents) })),
+            receiptVersion: e.receipt ? e.receipt.createdAt.getTime() : undefined,
             participants: e.shares.filter((s) => s.owedCents > 0 || s.splitInput !== null).map((s) => ({ userId: s.userId, value: valueFor(s) })),
           }}
         />
