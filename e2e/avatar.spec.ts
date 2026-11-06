@@ -37,3 +37,21 @@ test("avatars need you to be logged in", async ({ request }) => {
   const res = await request.get("/api/avatar/00000000-0000-0000-0000-000000000000");
   expect(res.status()).toBe(401);
 });
+
+test("an iPhone HEIC photo is converted and uploaded", async ({ page }) => {
+  await login(page, "ben@example.com");
+  await page.goto("/account");
+  await page.locator("#photo").setInputFiles(path.resolve("e2e/fixtures/iphone-photo.heic"));
+  await expect(page.getByText("Photo updated")).toBeVisible({ timeout: 30_000 });
+  await page.reload();
+  const src = await page.locator("header img").first().getAttribute("src");
+  expect(src).toMatch(/\?v=\d+$/);
+  expect((await page.request.get(src!)).headers()["content-type"]).toBe("image/jpeg");
+});
+
+test("a file that isn't a photo gets a clear message", async ({ page }) => {
+  await login(page, "ana@example.com");
+  await page.goto("/account");
+  await page.locator("#photo").setInputFiles(path.resolve("e2e/fixtures/not-a-photo.jpg"));
+  await expect(page.getByText("isn't a photo we can open")).toBeVisible();
+});
