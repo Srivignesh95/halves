@@ -9,6 +9,7 @@ Live at **https://halves.svkzone.com**
 ## What it does
 
 - **Groups and friends.** Make a group for your home, a trip or a couple, or split one-on-one with a friend.
+- **Safe sign-up.** New accounts confirm their email with a 6-digit code, and repeated wrong passwords lock the login for 15 minutes.
 - **Invite by email.** Add someone who isn't on Halves yet. They get an invite email, and everything you added for them is waiting when they sign up.
 - **Split any way.** Equally, by exact amounts, by percentage or by shares. Several people can pay for one bill, and the leftover cents are always shared fairly.
 - **Scan receipts.** Take a photo and Halves reads the shop, items, tax and total. Split the total, or split item by item with tax only on the taxed items.
@@ -193,10 +194,8 @@ Email is used for password resets, invites, reminders and balance summaries.
    | `SMTP_USER` | `noreply@yourdomain.com` (the full address, exactly as created) |
    | `SMTP_PASS` | the mailbox's own password |
 
-3. Test from your computer: `npm run mail:test you@example.com`
-4. Test from the live site:
-   `https://<your-site>/api/mail-test?to=you@example.com&key=<your CRON_SECRET>`
-   You want `"ok": true` and the email in your inbox. Check Spam the first time.
+3. Test the settings from your computer: `npm run mail:test you@example.com`. You want `Sent: 250` and the email in your inbox. Check Spam the first time.
+4. Add the same settings in Vercel, redeploy, then use **Forgot password?** on the live site with your own email to confirm.
 
 **Option B: Resend.** Verify your domain at [resend.com](https://resend.com), then set `RESEND_API_KEY` and `MAIL_FROM`. If `RESEND_API_KEY` is set, it's used instead of SMTP.
 
@@ -239,7 +238,7 @@ To pick up a new icon later, remove it from the home screen and add it again.
 
 - [ ] The live database has no sample data (no `password123` accounts)
 - [ ] Your database password has been changed if it was ever shared or pasted anywhere
-- [ ] Email works (the mail test shows `"ok": true`)
+- [ ] Email works (`npm run mail:test` shows `Sent: 250`, and a sign-up code arrives)
 - [ ] `APP_URL` is your real address
 - [ ] A privacy policy mentions Neon (data), Vercel (hosting, photos), your email provider and Anthropic (receipt reading)
 
@@ -250,7 +249,7 @@ To pick up a new icon later, remove it from the home screen and add it again.
 | Setting | Needed? | What it's for |
 | --- | --- | --- |
 | `DATABASE_URL` | **Required** | Postgres connection string |
-| `CRON_SECRET` | **Required** | Protects the scheduled jobs and the mail test page. 32+ random characters |
+| `CRON_SECRET` | **Required** | Protects the scheduled jobs. 32+ random characters |
 | `APP_URL` | **Required** | The site's address, used in email links |
 | `MAIL_FROM` | For email | Sender, e.g. `Halves <noreply@yourdomain.com>` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | For email (Option A) | Your mailbox's sending settings |
@@ -317,11 +316,14 @@ Remove `&channel_binding=require` from `DATABASE_URL`.
 **`535 5.7.8 authentication failed` when sending email**
 The mailbox name or password doesn't match. Log in to webmail with exactly the `SMTP_USER` and `SMTP_PASS` you set (watch for `no-reply` vs `noreply`). In `.env`, put a password containing `#` in double quotes.
 
-**Password reset or invite email never arrives**
-Check Spam. Each address gets at most 3 reset emails an hour and 1 invite a day, so repeated tries go quiet on purpose. Every sent email is logged in Vercel as `[mail] sent ...`; a failure is logged with the reason.
+**Sign-up code, password reset or invite email never arrives**
+Check Spam. Each address gets at most 5 sign-up codes an hour, 3 reset emails an hour and 1 invite a day, so repeated tries go quiet on purpose. Every sent email is logged in Vercel as `[mail] sent ...`; a failure is logged with the reason.
 
 **`Server Action "..." was not found on the server`**
 A page opened before a deploy is running the old version. The app reloads itself when this happens; otherwise reload the page, or close and reopen the home-screen app.
+
+**`Too many wrong attempts` at log in**
+Five wrong passwords for one email lock it for 15 minutes. Wait, or use **Forgot password?**.
 
 **`That file isn't a photo we can open`**
 Use a JPEG, PNG or iPhone (HEIC) photo. Other formats aren't supported.

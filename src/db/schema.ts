@@ -67,6 +67,28 @@ export const expenseReceipts = pgTable("expense_receipts", {
   createdAt: createdAt(),
 });
 
+// Sign-ups waiting for their email code. The account is only created (or an invite claimed) once the code checks out.
+export const pendingSignups = pgTable("pending_signups", {
+  id: id(),
+  email: text("email").notNull().unique(),
+  name: text("name").notNull(),
+  passwordHash: text("password_hash").notNull(),
+  codeHash: text("code_hash").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  sends: integer("sends").notNull().default(1),
+  lastSentAt: timestamp("last_sent_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: createdAt(),
+});
+
+// Failed log-ins, to slow down password guessing.
+export const loginFailures = pgTable("login_failures", {
+  id: id(),
+  email: text("email").notNull(),
+  ip: text("ip"),
+  createdAt: createdAt(),
+}, (t) => [index("login_failures_email_idx").on(t.email, t.createdAt), index("login_failures_ip_idx").on(t.ip, t.createdAt)]);
+
 // Receipt scans, kept only to limit how many a person can do per day (the photo itself is not stored).
 export const receiptScans = pgTable("receipt_scans", {
   id: id(),

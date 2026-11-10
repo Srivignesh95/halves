@@ -3,6 +3,21 @@
 //   npx playwright test
 import { expect, test, type Page } from "@playwright/test";
 
+/** The 6-digit sign-up code from the test outbox (the server runs with MAIL_OUTBOX_DIR=.outbox). */
+async function codeSentTo(email: string) {
+  const { readdir, readFile } = await import("node:fs/promises");
+  for (let i = 0; i < 40; i++) {
+    const files = (await readdir(".outbox").catch(() => [] as string[])).filter((f) => f.endsWith(`-${email}.json`)).sort();
+    for (const f of files.reverse()) {
+      const m = JSON.parse(await readFile(`.outbox/${f}`, "utf8")) as { subject: string };
+      const code = m.subject.match(/^(\d{6}) is your Halves code$/)?.[1];
+      if (code) return code;
+    }
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  throw new Error(`no sign-up code for ${email}`);
+}
+
 async function login(page: Page, email: string) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
@@ -114,6 +129,10 @@ test("F03 create a group and invite someone who has no account yet; they claim i
   await page.getByLabel("Email").fill(invitee);
   await page.getByLabel("Password").fill("password123");
   await page.getByRole("button", { name: "Sign up" }).click();
+  // the invite is only claimed once the email is proven: enter the code that was emailed
+  await expect(page).toHaveURL(/\/signup\/verify\?email=/);
+  await page.getByLabel("Code").fill(await codeSentTo(invitee));
+  await page.getByRole("button", { name: "Finish signing up" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.locator("section", { has: page.getByRole("heading", { name: "You owe" }) })).toContainText("$10.00");
 });

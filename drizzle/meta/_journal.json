@@ -50,6 +50,13 @@
       "when": 1793928149830,
       "tag": "0006_expense_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794286465650,
+      "tag": "0007_signup_codes_login_limits",
+      "breakpoints": true
     }
   ]
 }

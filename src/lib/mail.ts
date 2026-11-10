@@ -171,3 +171,24 @@ Stop these emails: ${settingsLink}`,
 </div>`,
   };
 }
+
+export function signupCodeEmail(name: string, code: string, minutes: number): Omit<Mail, "to"> {
+  return {
+    subject: `${code} is your Halves code`,
+    text: `Hi ${name},
+
+Your code to finish signing up for Halves is:
+
+${code}
+
+It works for ${minutes} minutes. If you didn't try to sign up, ignore this email and no account will be made.
+
+Halves`,
+    html: `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#16141f">
+  <p style="font-size:18px;font-weight:700;margin:0 0 16px">Halves</p>
+  <p>Hi ${esc(name)}, here's your code to finish signing up:</p>
+  <p style="font-size:34px;font-weight:800;letter-spacing:8px;margin:20px 0;font-family:ui-monospace,Menlo,monospace">${esc(code)}</p>
+  <p style="font-size:14px;color:#5c5a6e">It works for ${minutes} minutes. If you didn't try to sign up, ignore this email and no account will be made.</p>
+</div>`,
+  };
+}
