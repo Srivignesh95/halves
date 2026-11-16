@@ -41,3 +41,9 @@ export function nextOccurrence(from: Date, r: Recurrence, anchorDay = from.getUT
 export function formatDate(d: Date): string {
   return d.toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
+
+/** Today on this device's clock (use in the browser; the server's "today" is UTC and runs ahead in the evening in the Americas). */
+export function localTodayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}

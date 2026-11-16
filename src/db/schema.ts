@@ -252,3 +252,108 @@ export type User = typeof users.$inferSelect;
 export const expenseReceiptsRelations = relations(expenseReceipts, ({ one }) => ({
   expense: one(expenses, { fields: [expenseReceipts.expenseId], references: [expenses.id] }),
 }));
+
+// ───────────────────────── My Money (personal spending) ─────────────────────────
+// Personal records only their owner sees. A personal expense can point at the Halves expense it was split as.
+
+export const paymentKind = pgEnum("payment_kind", ["credit_card", "debit_card", "cash", "upi", "bank_transfer", "other"]);
+
+// Cards, cash, UPI... One row per way the person pays. Created when they save one or type a new one on an expense.
+export const paymentMethods = pgTable("payment_methods", {
+  id: id(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  kind: paymentKind("kind").notNull(),
+  label: text("label").notNull(),
+  last4: char("last4", { length: 4 }),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [index("payment_methods_user_idx").on(t.userId)]);
+
+// Categories a person adds on top of the standard ones.
+export const moneyCategories = pgTable("money_categories", {
+  id: id(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  createdAt: createdAt(),
+}, (t) => [unique("money_categories_user_name").on(t.userId, t.name)]);
+
+// EMIs and other fixed instalments. The daily job turns each due one into a personal expense.
+export const emis = pgTable("emis", {
+  id: id(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  lender: text("lender"),
+  amountCents: integer("amount_cents").notNull(),
+  currency: char("currency", { length: 3 }).notNull(),
+  frequency: recurrence("frequency").notNull(),
+  // first payment date; also the anchor day for monthly EMIs
+  startsOn: date("starts_on", { mode: "date" }).notNull(),
+  nextDueOn: date("next_due_on", { mode: "date" }),
+  // null = not tracked; counts down with each payment and stops the EMI at 0
+  paymentsLeft: integer("payments_left"),
+  paymentMethodId: uuid("payment_method_id").references(() => paymentMethods.id, { onDelete: "set null" }),
+  category: text("category").notNull().default("emi"),
+  stoppedAt: timestamp("stopped_at", { withTimezone: true }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (t) => [
+  index("emis_user_idx").on(t.userId),
+  index("emis_due_idx").on(t.nextDueOn),
+  check("emis_amount_positive", sql`${t.amountCents} > 0`),
+  check("emis_frequency", sql`${t.frequency} in ('monthly', 'fortnightly')`),
+]);
+
+export const personalExpenses = pgTable("personal_expenses", {
+  id: id(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  description: text("description").notNull(),
+  // the full amount you paid; when split on Halves, only your share counts as spending
+  amountCents: integer("amount_cents").notNull(),
+  currency: char("currency", { length: 3 }).notNull(),
+  date: date("date", { mode: "date" }).notNull(),
+  // a standard key (see lib/money-categories) or "c:<money_categories.id>"
+  category: text("category").notNull().default("other"),
+  paymentMethodId: uuid("payment_method_id").references(() => paymentMethods.id, { onDelete: "set null" }),
+  notes: text("notes"),
+  halvesExpenseId: uuid("halves_expense_id").references(() => expenses.id, { onDelete: "set null" }),
+  emiId: uuid("emi_id").references(() => emis.id, { onDelete: "set null" }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (t) => [
+  index("personal_expenses_user_date_idx").on(t.userId, t.date),
+  index("personal_expenses_halves_idx").on(t.halvesExpenseId),
+  check("personal_expenses_amount_positive", sql`${t.amountCents} > 0`),
+]);
+
+// Lines read from a receipt, each with its own category. Their sum may differ from the total (tax, tip):
+// the report spreads the total over the item categories in proportion.
+export const personalExpenseItems = pgTable("personal_expense_items", {
+  id: id(),
+  expenseId: uuid("expense_id").notNull().references(() => personalExpenses.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  category: text("category").notNull(),
+  position: integer("position").notNull().default(0),
+}, (t) => [index("personal_expense_items_expense_idx").on(t.expenseId), check("personal_expense_items_non_negative", sql`${t.amountCents} >= 0`)]);
+
+// Monthly report: on/off, and the last month sent (YYYY-MM) so a re-run never sends twice.
+export const moneyReportPrefs = pgTable("money_report_prefs", {
+  userId: uuid("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  enabled: boolean("enabled").notNull().default(true),
+  lastSentMonth: char("last_sent_month", { length: 7 }),
+  updatedAt: updatedAt(),
+});
+
+export const personalExpensesRelations = relations(personalExpenses, ({ one, many }) => ({
+  user: one(users, { fields: [personalExpenses.userId], references: [users.id] }),
+  paymentMethod: one(paymentMethods, { fields: [personalExpenses.paymentMethodId], references: [paymentMethods.id] }),
+  halvesExpense: one(expenses, { fields: [personalExpenses.halvesExpenseId], references: [expenses.id] }),
+  emi: one(emis, { fields: [personalExpenses.emiId], references: [emis.id] }),
+  items: many(personalExpenseItems),
+}));
+export const personalExpenseItemsRelations = relations(personalExpenseItems, ({ one }) => ({
+  expense: one(personalExpenses, { fields: [personalExpenseItems.expenseId], references: [personalExpenses.id] }),
+}));
+export const emisRelations = relations(emis, ({ one }) => ({
+  paymentMethod: one(paymentMethods, { fields: [emis.paymentMethodId], references: [paymentMethods.id] }),
+}));

@@ -12,6 +12,7 @@ const icons = {
   home: "M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z",
   activity: "M3 12h4l3-8 4 16 3-8h4",
   list: "M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01",
+  wallet: "M3 7a2 2 0 0 1 2-2h13v4M3 7v11a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2zm13 7h.01",
 };
 const Icon = ({ d }: { d: string }) => (
   <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
@@ -46,6 +47,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <NavLink href="/dashboard"><Icon d={icons.home} />Dashboard</NavLink>
             <NavLink href="/activity"><Icon d={icons.activity} />Activity</NavLink>
             <NavLink href="/expenses"><Icon d={icons.list} />All expenses</NavLink>
+            <NavLink href="/money"><Icon d={icons.wallet} />My Money</NavLink>
           </nav>
           <div className="glass mt-4 hidden rounded-lg p-3 md:block">
             <div className="section-title flex items-center justify-between">Groups <Link href="/groups/new" className="normal-case tracking-normal text-accent">+ add</Link></div>
