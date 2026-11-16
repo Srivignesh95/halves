@@ -129,22 +129,18 @@ export function MoneyForm({ action, me, groups, friends, payments, customCategor
     }
   }
 
-  // who the split is with
+  // who the split is with: a group's members, or (outside a group) you and every friend, any of whom can be ticked
   const people: Person[] = useMemo(() => {
     if (withWho.startsWith("g:")) return groups.find((g) => g.id === withWho.slice(2))?.members ?? [];
-    if (withWho.startsWith("f:")) {
-      const f = friends.find((x) => x.id === withWho.slice(2));
-      return f ? [me, f] : [];
-    }
+    if (withWho === "friends" || withWho.startsWith("f:")) return [me, ...friends];
     return [];
   }, [withWho, groups, friends, me]);
 
   function pickWho(v: string) {
     setWithWho(v);
-    let list: Person[] = [];
-    if (v.startsWith("g:")) list = groups.find((g) => g.id === v.slice(2))?.members ?? [];
-    if (v.startsWith("f:")) list = [me, ...friends.filter((f) => f.id === v.slice(2))];
-    setIncluded(new Set(list.map((p) => p.id)));
+    if (v.startsWith("g:")) setIncluded(new Set((groups.find((g) => g.id === v.slice(2))?.members ?? []).map((p) => p.id)));
+    else if (v.startsWith("f:")) setIncluded(new Set([me.id, v.slice(2)]));
+    else setIncluded(new Set([me.id]));
     setValues({});
   }
 
@@ -317,11 +313,12 @@ export function MoneyForm({ action, me, groups, friends, payments, customCategor
               <div>
                 <label className="label" htmlFor="withWho">Split with</label>
                 <select id="withWho" className="field" value={withWho} onChange={(e) => pickWho(e.target.value)}>
-                  <option value="" disabled>Pick a friend or group</option>
-                  {friends.length > 0 && <optgroup label="Friends">{friends.map((f) => <option key={f.id} value={`f:${f.id}`}>{f.name}</option>)}</optgroup>}
+                  <option value="" disabled>Pick friends or a group</option>
+                  {friends.length > 0 && <option value="friends">Friends (no group)</option>}
                   {groups.length > 0 && <optgroup label="Groups">{groups.map((g) => <option key={g.id} value={`g:${g.id}`}>{g.name}</option>)}</optgroup>}
                 </select>
                 {friends.length === 0 && groups.length === 0 && <p className="mt-1 text-xs text-muted">Add a friend or group on Halves first.</p>}
+                {people.length > 0 && <p className="mt-1 text-xs text-muted">Tick everyone sharing this, as many as you like.</p>}
               </div>
               {people.length > 0 && (
                 <>

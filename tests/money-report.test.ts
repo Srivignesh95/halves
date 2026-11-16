@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildReport, monthRange, previousMonth, shiftMonth, spreadOverItems, type ReportExpense } from "@/lib/money-report";
+import { buildReport, monthRange, previousMonth, shiftMonth, spreadOverItems, toSlices, type ReportExpense } from "@/lib/money-report";
 import { fromHalvesCategory, isCustomKey, moneyCategoryLabel, paymentLabel, toHalvesCategory } from "@/lib/money-categories";
 
 const exp = (o: Partial<ReportExpense>): ReportExpense => ({
@@ -112,5 +112,24 @@ describe("categories and payment names", () => {
   it("names a card with its last 4 digits", () => {
     expect(paymentLabel({ kind: "credit_card", label: "Visa", last4: "1234" })).toBe("Visa ••1234");
     expect(paymentLabel({ kind: "cash", label: "Cash", last4: null })).toBe("Cash");
+  });
+});
+
+describe("toSlices", () => {
+  const name = (k: string) => k.toUpperCase();
+  it("keeps up to six categories as they are, largest first", () => {
+    const s = toSlices([["a", 100], ["b", 300], ["c", 200]], name);
+    expect(s.map((x) => x.key)).toEqual(["b", "c", "a"]);
+    expect(s[0].label).toBe("B");
+  });
+  it("folds everything past the fifth into Other when there are more than six", () => {
+    const rows: [string, number][] = [["a", 70], ["b", 60], ["c", 50], ["d", 40], ["e", 30], ["f", 20], ["g", 10]];
+    const s = toSlices(rows, name);
+    expect(s).toHaveLength(6);
+    expect(s[5]).toEqual({ key: "__other", label: "Other (2 categories)", cents: 30 });
+    expect(s.reduce((t, x) => t + x.cents, 0)).toBe(280);
+  });
+  it("drops empty categories", () => {
+    expect(toSlices([["a", 0], ["b", 5]], name).map((x) => x.key)).toEqual(["b"]);
   });
 });
