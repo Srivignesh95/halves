@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { monthData } from "@/lib/money-data";
-import { monthKey, monthLabel, monthRange, shiftMonth } from "@/lib/money-report";
+import { monthKey, monthLabel, monthRange, shiftMonth, toSlices } from "@/lib/money-report";
+import { CategoryDonut } from "@/components/category-donut";
 import { emailMoneyReport } from "@/app/actions/money";
 import { ActionForm, SubmitButton } from "@/components/forms";
 import { Card, EmptyState, LinkButton, PageHeader } from "@/components/ui";
@@ -42,7 +43,6 @@ export default async function MyMoney({ searchParams }: { searchParams: Promise<
       ) : (
         <div className="space-y-6">
           {report.map((c) => {
-            const max = Math.max(...c.byCategory.map(([, v]) => v), 1);
             return (
               <Card key={c.currency} className="p-5">
                 <div className="flex flex-wrap items-end justify-between gap-4">
@@ -65,17 +65,10 @@ export default async function MyMoney({ searchParams }: { searchParams: Promise<
                   )}
                 </div>
 
-                <div className="mt-6 grid gap-6 md:grid-cols-2">
+                <div className="mt-6 space-y-6">
                   <section>
                     <h3 className="section-title">By category</h3>
-                    <ul className="space-y-2">
-                      {c.byCategory.map(([k, v]) => (
-                        <li key={k}>
-                          <div className="flex justify-between text-sm"><span>{catName(k)}</span><strong className="tabular-nums">{formatMoney(v, c.currency)}</strong></div>
-                          <div className="mt-1 h-1.5 rounded-full bg-bg/70"><div className="h-1.5 rounded-full bg-accent" style={{ width: `${Math.max(2, (v / max) * 100)}%` }} /></div>
-                        </li>
-                      ))}
-                    </ul>
+                    <CategoryDonut slices={toSlices(c.byCategory, catName)} currency={c.currency} />
                   </section>
                   <section>
                     <h3 className="section-title">By payment method</h3>

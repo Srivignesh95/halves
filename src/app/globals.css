@@ -24,6 +24,14 @@
   --wash-1: 124 99 245;
   --wash-2: 45 190 160;
   --wash-3: 255 140 170;
+  /* chart categories, fixed order (validated for colour-blind separation, light and dark) */
+  --viz-1: #2a78d6;
+  --viz-2: #eb6834;
+  --viz-3: #1baf7a;
+  --viz-4: #eda100;
+  --viz-5: #e87ba4;
+  --viz-6: #008300;
+  --viz-other: #a3a1ad;
   color-scheme: light;
 }
 
@@ -48,6 +56,13 @@
     --wash-1: 110 80 255;
     --wash-2: 20 150 130;
     --wash-3: 200 70 130;
+    --viz-1: #3987e5;
+    --viz-2: #d95926;
+    --viz-3: #199e70;
+    --viz-4: #c98500;
+    --viz-5: #d55181;
+    --viz-6: #0ca30c;
+    --viz-other: #6f6c80;
     color-scheme: dark;
   }
 }

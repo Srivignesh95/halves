@@ -115,3 +115,15 @@ export function monthLabel(month: string, style: "long" | "short" = "long"): str
   const r = monthRange(month);
   return r ? r.from.toLocaleDateString("en-CA", { month: style, year: "numeric", timeZone: "UTC" }) : month;
 }
+
+export type Slice = { key: string; label: string; cents: number };
+const MAX_SLICES = 6;
+
+/** Pie slices: largest categories first; past the sixth they fold into one "Other" slice so each keeps a distinct colour. */
+export function toSlices(byCategory: [string, number][], name: (k: string) => string): Slice[] {
+  const sorted = byCategory.filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+  const named = (rows: [string, number][]) => rows.map(([k, v]) => ({ key: k, label: name(k), cents: v }));
+  if (sorted.length <= MAX_SLICES) return named(sorted);
+  const rest = sorted.slice(MAX_SLICES - 1);
+  return [...named(sorted.slice(0, MAX_SLICES - 1)), { key: "__other", label: `Other (${rest.length} categories)`, cents: rest.reduce((s, [, v]) => s + v, 0) }];
+}
