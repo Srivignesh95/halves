@@ -36,7 +36,6 @@ export function ActionForm({ action, children, className = "", confirm, resetOnS
     <form
       ref={ref}
       action={formAction}
-      className={className}
       onSubmit={(e) => {
         e.preventDefault();
         if (pending) return;
@@ -48,7 +47,8 @@ export function ActionForm({ action, children, className = "", confirm, resetOnS
     >
       {state?.error && <div className="mb-3"><Flash kind="error">{state.error}</Flash></div>}
       {state?.ok && <div className="mb-3"><Flash kind="ok">{state.ok}</Flash></div>}
-      <PendingContext.Provider value={pending}>{children}</PendingContext.Provider>
+      {/* the layout class applies to the fields only, so a message above never becomes a grid or flex cell */}
+      <PendingContext.Provider value={pending}>{className ? <div className={className}>{children}</div> : children}</PendingContext.Provider>
     </form>
   );
 }
