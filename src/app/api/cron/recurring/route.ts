@@ -4,8 +4,11 @@ import { db, expenses, expenseShares } from "@/lib/db";
 import { fromISODate, nextOccurrence, todayISO } from "@/lib/dates";
 import { logActivity } from "@/lib/activity";
 import { formatMoney } from "@/lib/money";
+import { runDueEmis } from "@/lib/money-emi";
+import { sendMonthlyReports } from "@/lib/money-cron";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 function authorised(req: Request) {
   const secret = process.env.CRON_SECRET;
@@ -45,5 +48,8 @@ export async function GET(req: Request) {
       occurs = next;
     }
   }
-  return Response.json({ checked: due.length, created });
+  // My Money: due EMI payments, then last month's report in the first days of a month
+  const emiPayments = await runDueEmis();
+  const reports = await sendMonthlyReports(new URL(req.url).host);
+  return Response.json({ checked: due.length, created, emiPayments, reports });
 }

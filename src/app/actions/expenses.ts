@@ -4,11 +4,11 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import { comments, db, expenseRevisions, expenses, expenseShares, friendships, groupMembers, users } from "@/lib/db";
+import { comments, db, expenseRevisions, expenses, expenseShares, users } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { areFriends, canSeeExpense, isGroupMember, UUID_RE } from "@/lib/access";
 import { logActivity } from "@/lib/activity";
-import { buildShares, computeOwed, SplitError, type Participant } from "@/lib/splits";
+import { insertHalvesExpense, resolveShares } from "@/lib/halves-split";
 import { CURRENCIES, formatMoney, parseMoney } from "@/lib/money";
 import { fromISODate, nextOccurrence } from "@/lib/dates";
 import { CATEGORIES } from "@/lib/constants";
@@ -32,16 +32,6 @@ const ExpenseInput = z.object({
   participants: z.array(z.object({ userId: uuid, value: z.string().optional() })).min(1, "Pick at least one person").max(100),
 });
 
-/** Who may appear on an expense: group members, or (outside a group) you and your friends. */
-async function allowedPeople(me: string, groupId: string | null): Promise<Set<string>> {
-  if (groupId) {
-    const m = await db.select({ id: groupMembers.userId }).from(groupMembers).where(eq(groupMembers.groupId, groupId));
-    return new Set(m.map((x) => x.id));
-  }
-  const f = await db.select({ id: friendships.friendId }).from(friendships).where(eq(friendships.userId, me));
-  return new Set([me, ...f.map((x) => x.id)]);
-}
-
 export async function saveExpense(_: ActionState, form: FormData): Promise<ActionState> {
   const me = await requireUser();
   let raw: unknown;
@@ -59,36 +49,9 @@ export async function saveExpense(_: ActionState, form: FormData): Promise<Actio
   const date = fromISODate(input.date);
   if (!date) return { error: "Pick a valid date" };
 
-  if (input.groupId && !(await isGroupMember(input.groupId, me.id))) return { error: "You are not in that group" };
-  const allowed = await allowedPeople(me.id, input.groupId);
-  const everyone = [...input.payers.map((p) => p.userId), ...input.participants.map((p) => p.userId)];
-  if (everyone.some((id) => !allowed.has(id))) return { error: input.groupId ? "Everyone on the expense must be in the group" : "You can only split with friends" };
-  if (!input.groupId && !everyone.includes(me.id)) return { error: "Outside a group, you have to be part of the expense" };
-
-  let shares;
-  try {
-    const participants: Participant[] = input.participants.map((p) => {
-      if (input.splitType === "equal") return { userId: p.userId };
-      if (input.splitType === "exact") {
-        const c = parseMoney(p.value ?? "0");
-        if (c === null) throw new SplitError("Check the amounts in the split");
-        return { userId: p.userId, value: c };
-      }
-      const v = Number(p.value ?? "0");
-      if (!Number.isFinite(v) || v < 0) throw new SplitError("Check the numbers in the split");
-      return { userId: p.userId, value: v };
-    });
-    const payers = input.payers.map((p) => {
-      const c = input.payers.length === 1 ? amountCents : parseMoney(p.amount);
-      if (c === null) throw new SplitError("Check the amounts each person paid");
-      return { userId: p.userId, paidCents: c };
-    });
-    shares = buildShares(amountCents, payers, computeOwed(amountCents, input.splitType, participants));
-  } catch (e) {
-    if (e instanceof SplitError) return { error: e.message };
-    throw e;
-  }
-  const splitInput = new Map(input.participants.map((p) => [p.userId, input.splitType === "percent" || input.splitType === "shares" ? String(Number(p.value ?? 0)) : null]));
+  const resolved = await resolveShares(me.id, amountCents, input);
+  if ("error" in resolved) return { error: resolved.error };
+  const shareRows = resolved.rows;
 
   const data = {
     groupId: input.groupId,
@@ -102,8 +65,7 @@ export async function saveExpense(_: ActionState, form: FormData): Promise<Actio
     recurrence: input.recurrence,
     nextOccursOn: input.recurrence === "none" ? null : nextOccurrence(date, input.recurrence),
   };
-  const shareRows = shares.map((s) => ({ ...s, splitInput: splitInput.get(s.userId) ?? null }));
-  const people = shares.map((s) => s.userId);
+  const people = shareRows.map((s) => s.userId);
   const what = `"${input.description}" (${formatMoney(amountCents, input.currency)})`;
 
   const id = await db.transaction(async (tx) => {
@@ -117,10 +79,7 @@ export async function saveExpense(_: ActionState, form: FormData): Promise<Actio
       await logActivity(tx, { type: "expense_updated", actorId: me.id, userIds: [...people, ...old.shares.map((s) => s.userId)], groupId: input.groupId, expenseId: old.id, summary: `${me.name} updated ${what}` });
       return old.id;
     }
-    const [e] = await tx.insert(expenses).values({ ...data, createdById: me.id }).returning({ id: expenses.id });
-    await tx.insert(expenseShares).values(shareRows.map((r) => ({ ...r, expenseId: e.id })));
-    await logActivity(tx, { type: "expense_added", actorId: me.id, userIds: people, groupId: input.groupId, expenseId: e.id, summary: `${me.name} added ${what}` });
-    return e.id;
+    return insertHalvesExpense(tx, me, data, shareRows);
   });
 
   // the photo is stored after the expense, so a storage hiccup never loses the expense itself

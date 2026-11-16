@@ -1,5 +1,9 @@
 import "server-only";
 import { z } from "zod";
+import { MONEY_CATEGORIES, PAYMENT_KINDS } from "./money-categories";
+
+const CATEGORY_KEYS = MONEY_CATEGORIES.map(([k]) => k);
+const KIND_KEYS = PAYMENT_KINDS.map(([k]) => k);
 
 /** What we ask Claude to fill in. Amounts are decimals as printed; we turn them into cents ourselves. */
 const TOOL = {
@@ -8,7 +12,7 @@ const TOOL = {
   input_schema: {
     type: "object",
     properties: {
-      is_receipt: { type: "boolean", description: "false if the image is not a receipt, bill or invoice" },
+      is_receipt: { type: "boolean", description: "false if the image is not a receipt, bill, invoice, online order confirmation or payment screenshot (e.g. UPI)" },
       merchant: { type: "string", description: "Shop or restaurant name, short" },
       date: { type: "string", description: "Purchase date as YYYY-MM-DD, or empty if not printed" },
       currency: { type: "string", description: "ISO 4217 code, e.g. CAD, USD, INR. Guess from symbols, address and tax names" },
@@ -22,6 +26,7 @@ const TOOL = {
             price: { type: "number", description: "Line total for this item (quantity x unit price), after any discount printed for this line" },
             taxed: { type: "boolean", description: "true if tax applies to this line: a tax code letter like H, T, G, P or HST beside it, or the item type is normally taxed. Basic groceries are usually not taxed" },
             tax_codes: { type: "array", items: { type: "string" }, description: "Tax code letters printed beside the line, e.g. ['H'] or ['G','P'], empty if none" },
+            category: { type: "string", enum: CATEGORY_KEYS, description: "Spending category for this line" },
           },
           required: ["name", "price", "taxed"],
         },
@@ -42,6 +47,17 @@ const TOOL = {
       discount: { type: "number", description: "Whole-bill discount as a positive number, 0 if none. Do not repeat discounts already folded into item prices" },
       tip: { type: "number", description: "Tip or gratuity, 0 if none" },
       total: { type: "number", description: "Final total paid" },
+      category: { type: "string", enum: CATEGORY_KEYS, description: "Best spending category for the whole bill" },
+      payment: {
+        type: "object",
+        description: "How it was paid, only from what is printed or shown. Use 'unknown' when it isn't shown",
+        properties: {
+          method: { type: "string", enum: [...KIND_KEYS, "unknown"], description: "credit_card or debit_card when a card is shown (Visa, Mastercard, Amex, RuPay...); Interac debit is debit_card" },
+          brand: { type: "string", description: "Card network or app as printed, e.g. Visa, Mastercard, Amex, Interac, RuPay, Google Pay, PhonePe, Paytm. Empty if not shown" },
+          last4: { type: "string", description: "Last 4 digits of the card if printed (e.g. from ************1234), else empty" },
+        },
+        required: ["method"],
+      },
     },
     required: ["is_receipt", "items", "taxes", "total"],
   },
@@ -59,24 +75,37 @@ const Parsed = z.object({
     price: num,
     taxed: z.boolean(),
     tax_codes: z.array(z.string().max(10)).max(5).optional().default([]),
+    category: z.string().max(30).optional(),
   })).max(150),
   subtotal: num.optional(),
   taxes: z.array(z.object({ label: z.string().max(60), code: z.string().max(10).optional(), amount: num })).max(6),
   discount: num.optional().default(0),
   tip: num.optional().default(0),
   total: num,
+  category: z.string().max(30).optional(),
+  payment: z.object({
+    method: z.string().max(30),
+    brand: z.string().max(40).optional().default(""),
+    last4: z.string().max(30).optional().default(""),
+  }).optional(),
 });
 
 export type ScannedReceipt = {
   merchant: string;
   date: string;
   currency: string;
-  items: { name: string; priceCents: number; taxed: boolean; taxCodes: string[] }[];
+  items: { name: string; priceCents: number; taxed: boolean; taxCodes: string[]; category: string }[];
   taxes: { label: string; code?: string; amountCents: number }[];
   discountCents: number;
   tipCents: number;
   totalCents: number;
+  /** best category for the whole bill (My Money) */
+  category: string;
+  /** how it was paid, when the receipt shows it (My Money) */
+  payment: { kind: string; brand: string; last4: string } | null;
 };
+
+const asCategory = (c?: string) => (c && (CATEGORY_KEYS as readonly string[]).includes(c) ? c : "other");
 
 const cents = (n: number) => Math.round(n * 100);
 
@@ -104,7 +133,7 @@ export async function readReceipt(image: Buffer, mediaType: "image/jpeg" | "imag
         role: "user",
         content: [
           { type: "image", source: { type: "base64", media_type: mediaType, data: image.toString("base64") } },
-          { type: "text", text: "Read this receipt and record it with the tool. Copy amounts exactly as printed. List every purchased line as an item; do not list subtotal, tax, tip, total or payment lines as items. If a line has a discount printed under it, subtract it from that item's price. If the image is not a receipt, set is_receipt to false and leave items empty." },
+          { type: "text", text: "Read this receipt and record it with the tool. Copy amounts exactly as printed. List every purchased line as an item; do not list subtotal, tax, tip, total or payment lines as items. If a line has a discount printed under it, subtract it from that item's price. Order confirmations and payment screenshots (such as UPI) count as receipts; if they show no item lines, add one item for what was bought. Record how it was paid only if the image shows it. If the image is not a receipt, set is_receipt to false and leave items empty." },
         ],
       }],
     }),
@@ -134,10 +163,15 @@ export async function readReceipt(image: Buffer, mediaType: "image/jpeg" | "imag
       priceCents: cents(i.price),
       taxed: i.taxed,
       taxCodes: i.tax_codes.map((c) => c.toUpperCase()),
+      category: asCategory(i.category ?? r.category),
     })),
     taxes: r.taxes.filter((t) => cents(t.amount) > 0).map((t) => ({ label: t.label.slice(0, 40), code: t.code?.toUpperCase() || undefined, amountCents: cents(t.amount) })),
     discountCents: cents(r.discount),
     tipCents: cents(r.tip),
     totalCents: cents(r.total),
+    category: asCategory(r.category),
+    payment: r.payment && (KIND_KEYS as readonly string[]).includes(r.payment.method)
+      ? { kind: r.payment.method, brand: r.payment.brand.trim().slice(0, 40), last4: /d{4}$/.exec(r.payment.last4.replace(/D/g, ""))?.[0] ?? "" }
+      : null,
   };
 }

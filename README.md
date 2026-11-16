@@ -18,6 +18,7 @@ Live at **https://halves.svkzone.com**
 - **Simplify debts.** Turns a tangle of IOUs into the fewest payments that settle everyone.
 - **Settle up.** Record a payment, with the amount filled in from the real balance.
 - **Reminders and summaries.** Send a friend a reminder of what they owe, get a weekly email of your balances, or ask for one any time.
+- **My Money.** Track your own spending: scan a receipt, online order or UPI screenshot and each item gets a category, plus how you paid. Add EMIs (monthly or every 2 weeks), your own categories and cards, and split any expense straight onto Halves. Your share of every Halves expense counts too. A spending report, with your most-used card, is emailed on the 1st of each month.
 - **The everyday extras.** Activity feed, comments, edit history, restore deleted expenses, recurring expenses, search, CSV export, profile photos, forgot password, dark mode.
 - **Works like an app on your phone.** Add it to your iPhone or Android home screen.
 
@@ -222,7 +223,7 @@ These run automatically on Vercel from `vercel.json`, with no setup:
 
 | Job | When | What it does |
 | --- | --- | --- |
-| `/api/cron/recurring` | Daily, 06:00 UTC | Adds recurring expenses that are due |
+| `/api/cron/recurring` | Daily, 06:00 UTC | Adds recurring expenses and EMI payments that are due; in the first 3 days of a month, emails last month's My Money report |
 | `/api/cron/digest` | Mondays, 14:00 UTC | Emails everyone with open balances a summary |
 
 Vercel sends your `CRON_SECRET` with each run; requests without it are refused.
